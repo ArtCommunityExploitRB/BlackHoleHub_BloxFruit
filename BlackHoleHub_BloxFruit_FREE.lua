@@ -1,5 +1,5 @@
 -- [[ 🌌 BLACK HOLE HUB | ArtSquadFive | THE ULTIMATE PROGRESSION 🌌 ]]
--- Версия 2.2 – исправлен спам кликов (работает через VirtualUser, не мешает GUI)
+-- Версия 2.3 – супер-спам кликов (регулируемый интервал)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -43,6 +43,7 @@ local _G = {
     FlyEnabled = false,
     FlySpeed = 50,
     Collapsed = false,
+    ClickInterval = 40, -- в миллисекундах
 }
 
 local WeaponsList = {}
@@ -640,20 +641,19 @@ local function EquipWeapon()
     end
 end
 
--- ИСПРАВЛЕННАЯ ФУНКЦИЯ КЛИКА – эмуляция через VirtualUser (не мешает GUI)
+-- СУПЕР-СПАМ КЛИКОВ (без проверок, просто кликает)
 local function ClickAttack()
-    -- Если игрок мёртв или нет персонажа – выходим
     if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("Humanoid") or LocalPlayer.Character.Humanoid.Health <= 0 then
         return
     end
-    -- Отправляем клик через VirtualUser, это не перехватывается GUI
+    -- Эмулируем клик через VirtualUser (не мешает GUI)
     pcall(function()
         VirtualUser:CaptureController()
         VirtualUser:Button1Down(Vector2.new(0, 0))
-        task.wait(0.05)
+        task.wait(0.02) -- минимальная задержка для регистрации
         VirtualUser:Button1Up(Vector2.new(0, 0))
     end)
-    -- Также пробуем активировать оружие (на случай, если клик не сработал)
+    -- Дополнительно активируем оружие
     pcall(function()
         local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
         if tool and tool:IsA("Tool") then
@@ -1156,9 +1156,12 @@ TeleportPage:GetPropertyChangedSignal("Visible"):Connect(function()
 end)
 
 ------------------------------------------------------------------------
--- НАСТРОЙКИ
+-- НАСТРОЙКИ (добавлен ползунок для интервала кликов)
 ------------------------------------------------------------------------
 CreateSlider(SettingsTab, "Скорость Полета (Автофарм)", 100, 450, _G.FarmSpeed, function(v) _G.FarmSpeed = v end)
+CreateSlider(SettingsTab, "Интервал кликов (мс)", 10, 200, _G.ClickInterval, function(v) 
+    _G.ClickInterval = v 
+end)
 CreateToggle(SettingsTab, "Noclip (Сквозь Стены)", _G.Noclip, function(s) _G.Noclip = s end)
 CreateToggle(SettingsTab, "Бесконечные Прыжки", _G.InfJump, function(s) _G.InfJump = s end)
 CreateToggle(SettingsTab, "Включить Полет (Fly)", _G.FlyEnabled, function(s) _G.FlyEnabled = s end)
@@ -1253,7 +1256,7 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- ГЛАВНЫЙ ЦИКЛ ФАРМА
+-- ГЛАВНЫЙ ЦИКЛ ФАРМА (с динамическим интервалом кликов)
 ------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(0.1) do
@@ -1277,7 +1280,7 @@ task.spawn(function()
                     if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character.Humanoid.Health <= 0 then break end
                     ClickAttack()
                     SpamSkills()
-                    task.wait(0.08) -- чуть быстрее для спама
+                    task.wait(_G.ClickInterval / 1000) -- используем настраиваемый интервал
                 end
                 currentTarget = nil
             else
@@ -1287,7 +1290,7 @@ task.spawn(function()
             continue
         end
 
-        -- 2. KILLAURA (радиус 1000)
+        -- 2. KILLAURA
         if _G.KillAuraRadius then
             local myPos = char.HumanoidRootPart.Position
             local enemies = Workspace:FindFirstChild("Enemies") or Workspace
@@ -1309,7 +1312,6 @@ task.spawn(function()
                 EquipWeapon()
                 while _G.KillAuraRadius and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character.Humanoid.Health > 0 do
                     if not nearest or not nearest.Parent or not nearest:FindFirstChild("Humanoid") or nearest.Humanoid.Health <= 0 then
-                        -- ищем нового
                         local newPos = LocalPlayer.Character.HumanoidRootPart.Position
                         local newNearest = nil
                         local newDist = 1001
@@ -1354,7 +1356,7 @@ task.spawn(function()
 
                     ClickAttack()
                     SpamSkills()
-                    task.wait(0.08)
+                    task.wait(_G.ClickInterval / 1000)
                 end
                 currentTarget = nil
             else
@@ -1415,7 +1417,7 @@ task.spawn(function()
                         if checkNpc ~= npcName then break end
                         ClickAttack()
                         SpamSkills()
-                        task.wait(0.08)
+                        task.wait(_G.ClickInterval / 1000)
                     end
                     currentTarget = nil
                 else

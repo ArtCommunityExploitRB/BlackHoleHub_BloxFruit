@@ -1,5 +1,5 @@
 -- [[ 🌌 BLACK HOLE HUB | ArtSquadFive | THE ULTIMATE PROGRESSION 🌌 ]]
--- Обновлённая версия с исправлениями и адаптацией под все устройства
+-- Версия 2.1 – исправлен KillAura (радиус 1000), адаптация под все экраны, кнопка «–»
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -42,7 +42,6 @@ local _G = {
     JumpPower = 50,
     FlyEnabled = false,
     FlySpeed = 50,
-    -- Для свёрнутого состояния
     Collapsed = false,
 }
 
@@ -53,7 +52,7 @@ local lastSkillTime = 0
 local skillKeys = {Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.V}
 local currentTarget = nil
 
--- СПИСОК ВСЕХ БОССОВ (для сравнения)
+-- СПИСОК БОССОВ (для сравнения)
 local BossList = {
     "The Gorilla King", "Chef", "The Saw", "Yeti", "Mob Leader",
     "Vice Admiral", "Saber Expert", "Warden", "Chief Warden", "Swan",
@@ -67,7 +66,7 @@ local BossList = {
     "Terrorshark", "Leviathan", "Tyrant of the Skies", "Core"
 }
 
--- КООРДИНАТЫ СПАВНА БОССОВ (для загрузки, если босс не виден)
+-- КООРДИНАТЫ СПАВНА БОССОВ
 local BossSpawnLocations = {
     ["The Gorilla King"] = Vector3.new(-1613, 37, 149),
     ["Chef"] = Vector3.new(-1181, 5, 3804),
@@ -158,7 +157,7 @@ local TeleportLocations = {
 }
 
 ------------------------------------------------------------------------
--- ТАБЛИЦА КВЕСТОВ (полная) – без изменений
+-- ТАБЛИЦА КВЕСТОВ (полная)
 ------------------------------------------------------------------------
 local MainQuestTable = {
     BanditQuest1 = { { LevelReq = 0, Name = "Bandits", Task = { ["Bandit"] = 5 } } },
@@ -218,22 +217,19 @@ local MainQuestTable = {
 local viewport = Workspace.CurrentCamera.ViewportSize
 local screenW, screenH = viewport.X, viewport.Y
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-local isConsole = GuiService:IsTenFootInterface()  -- для телевизоров / PlayStation
+local isConsole = GuiService:IsTenFootInterface()
 
--- Вычисляем оптимальный размер окна
 local baseWidth, baseHeight = 620, 420
 if isConsole then
     baseWidth, baseHeight = 900, 600
 elseif isMobile then
     baseWidth, baseHeight = math.min(screenW * 0.9, 500), math.min(screenH * 0.8, 400)
 else
-    -- ПК – можно задать фиксированный или адаптивный
     baseWidth = math.min(screenW * 0.6, 700)
     baseHeight = math.min(screenH * 0.6, 500)
 end
 
-local scale = math.min(screenW / baseWidth, screenH / baseHeight, 1.2) -- не более 1.2x
--- При необходимости можно ограничить минимальный масштаб
+local scale = math.min(screenW / baseWidth, screenH / baseHeight, 1.2)
 scale = math.max(scale, 0.5)
 
 ------------------------------------------------------------------------
@@ -309,7 +305,7 @@ BgImage.Image = "rbxassetid://89122563169047"
 BgImage.ImageTransparency = 0.85
 BgImage.ScaleType = Enum.ScaleType.Crop
 
--- TopBar с кнопкой сворачивания
+-- TopBar
 local TopBar = Instance.new("Frame", Main)
 TopBar.BackgroundColor3 = Color3.fromRGB(20, 10, 5)
 TopBar.Size = UDim2.new(1, 0, 0, 40)
@@ -325,7 +321,7 @@ TitleLabel.Size = UDim2.new(0, 300, 1, 0)
 TitleLabel.BackgroundTransparency = 1
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
--- Кнопка сворачивания (минус)
+-- Кнопка сворачивания
 local CollapseBtn = Instance.new("TextButton", TopBar)
 CollapseBtn.Size = UDim2.new(0, 30, 0, 30)
 CollapseBtn.Position = UDim2.new(1, -40, 0.5, -15)
@@ -337,12 +333,10 @@ CollapseBtn.TextSize = 20
 Instance.new("UICorner", CollapseBtn).CornerRadius = UDim.new(0, 6)
 CollapseBtn.ZIndex = 10
 
--- Свёрнутое состояние (будет скрывать всё кроме TopBar и уменьшать высоту)
 local function CollapseToggle()
     _G.Collapsed = not _G.Collapsed
     if _G.Collapsed then
         Main.Size = UDim2.new(0, baseWidth, 0, 40)
-        -- Скрываем контент
         Sidebar.Visible = false
         Container.Visible = false
         CollapseBtn.Text = "+"
@@ -355,14 +349,7 @@ local function CollapseToggle()
 end
 CollapseBtn.MouseButton1Click:Connect(CollapseToggle)
 
--- Для восстановления при двойном клике по заголовку (опционально)
-TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 and input.Position.Y - TopBar.AbsolutePosition.Y < 40 then
-        -- можно просто свернуть/развернуть, но не мешаем перетаскиванию
-    end
-end)
-
--- Кнопка показа/скрытия для мобильных (оставляем)
+-- Мобильная кнопка
 local MobileToggleBtn = Instance.new("ImageButton", BlackHoleHub)
 if isMobile then
     MobileToggleBtn.Size = UDim2.new(0, 50, 0, 50)
@@ -375,11 +362,11 @@ MobileToggleBtn.Image = "rbxassetid://89122563169047"
 Instance.new("UICorner", MobileToggleBtn).CornerRadius = UDim.new(1, 0)
 Instance.new("UIStroke", MobileToggleBtn).Color = Color3.fromRGB(255,255,255)
 MobileToggleBtn.MouseButton1Click:Connect(function()
-    if _G.Collapsed then CollapseToggle() end -- если свёрнуто, разворачиваем
+    if _G.Collapsed then CollapseToggle() end
     Main.Visible = not Main.Visible
 end)
 
--- Drag (без изменений)
+-- Drag
 local dragToggle, dragStart, startPos
 TopBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
@@ -457,7 +444,7 @@ local function CreateTab(name)
 end
 
 ------------------------------------------------------------------------
--- КОНСТРУКТОРЫ ЭЛЕМЕНТОВ (без изменений, кроме возможной адаптации)
+-- КОНСТРУКТОРЫ ЭЛЕМЕНТОВ
 ------------------------------------------------------------------------
 local function CreateToggle(parent, text, default, callback)
     local Frame = Instance.new("Frame", parent)
@@ -628,7 +615,7 @@ local function CreateButton(parent, text, callback)
 end
 
 ------------------------------------------------------------------------
--- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ (с изменениями)
+-- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
 ------------------------------------------------------------------------
 local function GetWeapons()
     table.clear(WeaponsList)
@@ -653,9 +640,7 @@ local function EquipWeapon()
     end
 end
 
--- ИСПРАВЛЕННАЯ ФУНКЦИЯ КЛИКА – теперь без эмуляции мыши, только Activate()
 local function ClickAttack()
-    -- Если GUI виден и мы взаимодействуем с ним – не спамим клики
     if Main.Visible and (UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or UserInputService:IsMouseButtonPressed(Enum.UserInputType.Touch)) then
         return
     end
@@ -705,7 +690,6 @@ local function FindNPCByName(name)
     return nil
 end
 
--- Функция для сканирования живых боссов (без ограничений)
 local function GetAliveBosses()
     local alive = {}
     local enemies = Workspace:FindFirstChild("Enemies") or Workspace
@@ -735,7 +719,7 @@ local function LoadBoss(bossName)
 end
 
 ------------------------------------------------------------------------
--- ФУНКЦИЯ GetQuestData (без изменений)
+-- ФУНКЦИЯ GetQuestData
 ------------------------------------------------------------------------
 local function GetQuestData()
     local lvl = 1
@@ -794,7 +778,7 @@ local function GetQuestData()
 end
 
 ------------------------------------------------------------------------
--- СОЗДАНИЕ ВКЛАДОК (без изменений)
+-- СОЗДАНИЕ ВКЛАДОК
 ------------------------------------------------------------------------
 local FarmTab = CreateTab("⚔️ Фарм")
 local WorldTab = CreateTab("🌍 Мир")
@@ -802,7 +786,7 @@ local BossTab = CreateTab("👑 Рейд боссов")
 local TeleportTab = CreateTab("🚀 Телепорт")
 local SettingsTab = CreateTab("⚙️ Настройки")
 
--- ФАРМ ВКЛАДКА
+-- ФАРМ
 CreateToggle(FarmTab, "Включить Автофарм (с квестом)", _G.AutoFarmLevel, function(s) 
     _G.AutoFarmLevel = s; 
     if not s then currentTarget = nil end 
@@ -818,11 +802,11 @@ CreateSlider(FarmTab, "Дистанция атаки", 8, 20, _G.FarmDistance, f
 CreateDropdown(FarmTab, "Выбор стороны атаки", {"Сверху", "Снизу", "Со спины"}, function(v) _G.AttackSide = v end)
 CreateDropdown(FarmTab, "Выбери Оружие", GetWeapons, function(v) _G.SelectedWeapon = v end)
 
--- МИР ВКЛАДКА
+-- МИР
 CreateToggle(WorldTab, "Авто-Подбор Фруктов", _G.AutoFruitFinder, function(s) _G.AutoFruitFinder = s end)
 CreateToggle(WorldTab, "Магнит Сундуков (Умный)", _G.AutoChestSteal, function(s) _G.AutoChestSteal = s end)
 
--- РЕЙД БОССОВ ВКЛАДКА (с динамическим списком живых боссов)
+-- РЕЙД БОССОВ
 local BossFrame = Instance.new("Frame", BossTab)
 BossFrame.Size = UDim2.new(1, 0, 0, 260)
 BossFrame.BackgroundTransparency = 1
@@ -1063,7 +1047,7 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- ВКЛАДКА TELEPORT (без изменений)
+-- ВКЛАДКА TELEPORT
 ------------------------------------------------------------------------
 local TeleportPage = TeleportTab
 
@@ -1164,7 +1148,7 @@ TeleportPage:GetPropertyChangedSignal("Visible"):Connect(function()
 end)
 
 ------------------------------------------------------------------------
--- НАСТРОЙКИ ВКЛАДКА
+-- НАСТРОЙКИ
 ------------------------------------------------------------------------
 CreateSlider(SettingsTab, "Скорость Полета (Автофарм)", 100, 450, _G.FarmSpeed, function(v) _G.FarmSpeed = v end)
 CreateToggle(SettingsTab, "Noclip (Сквозь Стены)", _G.Noclip, function(s) _G.Noclip = s end)
@@ -1177,7 +1161,7 @@ CreateToggle(SettingsTab, "Свой Прыжок", _G.JumpPowerEnabled, function
 CreateSlider(SettingsTab, "Прыжок (JumpPower)", 50, 250, _G.JumpPower, function(v) _G.JumpPower = v end)
 
 ------------------------------------------------------------------------
--- ПОТОКИ НАСТРОЕК ИГРОКА
+-- ПОТОКИ НАСТРОЕК
 ------------------------------------------------------------------------
 RunService.Stepped:Connect(function()
     if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
@@ -1228,7 +1212,7 @@ RunService.RenderStepped:Connect(function()
 end)
 
 ------------------------------------------------------------------------
--- АВТО-ИНСТИНКТ И АВТО-ХАКИ (без изменений)
+-- АВТО-ИНСТИНКТ И АВТО-ХАКИ
 ------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(1.5) do
@@ -1261,7 +1245,7 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- ГЛАВНЫЙ ЦИКЛ ФАРМА (ИСПРАВЛЕН)
+-- ГЛАВНЫЙ ЦИКЛ ФАРМА – ИСПРАВЛЕНА ЛОГИКА KILLAURA
 ------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(0.1) do
@@ -1272,7 +1256,7 @@ task.spawn(function()
             continue
         end
 
-        -- 1. БОСС (с загрузкой)
+        -- 1. БОСС
         if _G.BossFarmEnabled and _G.BossFarmTarget then
             local boss = FindNPCByName(_G.BossFarmTarget)
             if not boss then
@@ -1281,7 +1265,6 @@ task.spawn(function()
             if boss then
                 currentTarget = boss
                 EquipWeapon()
-                -- Бесконечный цикл для босса, пока он жив и флаг включён
                 while boss and boss.Parent and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 and _G.BossFarmEnabled and _G.BossFarmTarget do
                     if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character.Humanoid.Health <= 0 then break end
                     ClickAttack()
@@ -1296,12 +1279,13 @@ task.spawn(function()
             continue
         end
 
-        -- 2. 1000 МЕТРОВ (ИСПРАВЛЕНО: теперь работает непрерывно)
+        -- 2. KILLAURA – радиус 1000 (исправлено)
         if _G.KillAuraRadius then
             local myPos = char.HumanoidRootPart.Position
             local enemies = Workspace:FindFirstChild("Enemies") or Workspace
             local nearest = nil
-            local minDist = math.huge
+            local minDist = 1001 -- чуть больше 1000
+
             for _, child in ipairs(enemies:GetChildren()) do
                 if child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
                     local dist = (myPos - child.HumanoidRootPart.Position).Magnitude
@@ -1311,46 +1295,74 @@ task.spawn(function()
                     end
                 end
             end
+
             if nearest then
                 currentTarget = nearest
                 EquipWeapon()
-                -- Бесконечный цикл атаки, пока враг жив или пока включён флаг
-                while nearest and nearest.Parent and nearest:FindFirstChild("Humanoid") and nearest.Humanoid.Health > 0 and _G.KillAuraRadius do
-                    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character.Humanoid.Health <= 0 then break end
-                    ClickAttack()
-                    SpamSkills()
-                    task.wait(0.12)
-                    -- Если враг умер, ищем нового, не выходя из цикла
-                    if not nearest.Parent or not nearest:FindFirstChild("Humanoid") or nearest.Humanoid.Health <= 0 then
-                        -- ищем нового врага
-                        local newTarget = nil
-                        local newDist = math.huge
-                        local myPos2 = LocalPlayer.Character.HumanoidRootPart.Position
+                -- Внутренний цикл атаки
+                while _G.KillAuraRadius and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character.Humanoid.Health > 0 do
+                    -- Проверяем, жив ли текущий враг
+                    if not nearest or not nearest.Parent or not nearest:FindFirstChild("Humanoid") or nearest.Humanoid.Health <= 0 then
+                        -- Ищем нового врага
+                        local newPos = LocalPlayer.Character.HumanoidRootPart.Position
+                        local newNearest = nil
+                        local newDist = 1001
                         for _, child in ipairs(enemies:GetChildren()) do
                             if child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
-                                local d = (myPos2 - child.HumanoidRootPart.Position).Magnitude
+                                local d = (newPos - child.HumanoidRootPart.Position).Magnitude
                                 if d <= 1000 and d < newDist then
                                     newDist = d
-                                    newTarget = child
+                                    newNearest = child
                                 end
                             end
                         end
-                        if newTarget then
-                            nearest = newTarget
-                            currentTarget = newTarget
+                        if newNearest then
+                            nearest = newNearest
+                            currentTarget = newNearest
                         else
-                            break -- нет врагов, выходим из цикла
+                            -- Нет врагов – выходим из цикла
+                            break
                         end
                     end
+
+                    -- Если расстояние до врага стало больше 1000, ищем нового
+                    local currentDist = (LocalPlayer.Character.HumanoidRootPart.Position - nearest.HumanoidRootPart.Position).Magnitude
+                    if currentDist > 1000 then
+                        -- Ищем другого врага
+                        local newPos = LocalPlayer.Character.HumanoidRootPart.Position
+                        local newNearest = nil
+                        local newDist = 1001
+                        for _, child in ipairs(enemies:GetChildren()) do
+                            if child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
+                                local d = (newPos - child.HumanoidRootPart.Position).Magnitude
+                                if d <= 1000 and d < newDist then
+                                    newDist = d
+                                    newNearest = child
+                                end
+                            end
+                        end
+                        if newNearest then
+                            nearest = newNearest
+                            currentTarget = newNearest
+                        else
+                            break
+                        end
+                    end
+
+                    -- Атакуем
+                    ClickAttack()
+                    SpamSkills()
+                    task.wait(0.12)
                 end
                 currentTarget = nil
             else
+                -- Нет врагов в радиусе – ждём
                 task.wait(0.5)
             end
             continue
         end
 
-        -- 3. КВЕСТОВЫЙ ФАРМ (без изменений, но можно аналогично улучшить)
+        -- 3. КВЕСТОВЫЙ ФАРМ
         if _G.AutoFarmLevel then
             pcall(function()
                 local qKey, qId, npcName, isBoss = GetQuestData()
@@ -1433,7 +1445,7 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- УМНЫЕ ФРУКТЫ И СУНДУКИ (поиск без ограничений)
+-- УМНЫЕ ФРУКТЫ И СУНДУКИ
 ------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(1) do

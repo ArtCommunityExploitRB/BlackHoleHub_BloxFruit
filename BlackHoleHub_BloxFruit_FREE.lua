@@ -1,5 +1,5 @@
 -- [[ 🌌 BLACK HOLE HUB | ArtSquadFive | THE ULTIMATE PROGRESSION 🌌 ]]
--- Версия 2.1 – исправлен KillAura (радиус 1000), адаптация под все экраны, кнопка «–»
+-- Версия 2.2 – исправлен спам кликов (работает через VirtualUser, не мешает GUI)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -52,7 +52,7 @@ local lastSkillTime = 0
 local skillKeys = {Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.V}
 local currentTarget = nil
 
--- СПИСОК БОССОВ (для сравнения)
+-- СПИСОК БОССОВ
 local BossList = {
     "The Gorilla King", "Chef", "The Saw", "Yeti", "Mob Leader",
     "Vice Admiral", "Saber Expert", "Warden", "Chief Warden", "Swan",
@@ -115,7 +115,7 @@ local BossSpawnLocations = {
     ["Core"] = Vector3.new(0, 0, 0),
 }
 
--- Таблица локаций для телепортации
+-- Таблица локаций
 local TeleportLocations = {
     ["Sea 1"] = {
         {"Pirate Starter", -1057, 15, 1550},
@@ -157,7 +157,7 @@ local TeleportLocations = {
 }
 
 ------------------------------------------------------------------------
--- ТАБЛИЦА КВЕСТОВ (полная)
+-- ТАБЛИЦА КВЕСТОВ
 ------------------------------------------------------------------------
 local MainQuestTable = {
     BanditQuest1 = { { LevelReq = 0, Name = "Bandits", Task = { ["Bandit"] = 5 } } },
@@ -241,7 +241,7 @@ BlackHoleHub.Parent = CoreGui
 BlackHoleHub.ResetOnSpawn = false
 BlackHoleHub.IgnoreGuiInset = true
 
--- ИНТРО (без изменений)
+-- ИНТРО
 local IntroFrame = Instance.new("Frame", BlackHoleHub)
 IntroFrame.Size = UDim2.new(1, 0, 1, 0)
 IntroFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
@@ -640,16 +640,24 @@ local function EquipWeapon()
     end
 end
 
+-- ИСПРАВЛЕННАЯ ФУНКЦИЯ КЛИКА – эмуляция через VirtualUser (не мешает GUI)
 local function ClickAttack()
-    if Main.Visible and (UserInputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) or UserInputService:IsMouseButtonPressed(Enum.UserInputType.Touch)) then
+    -- Если игрок мёртв или нет персонажа – выходим
+    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("Humanoid") or LocalPlayer.Character.Humanoid.Health <= 0 then
         return
     end
+    -- Отправляем клик через VirtualUser, это не перехватывается GUI
     pcall(function()
-        if LocalPlayer.Character then
-            local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
-            if tool and tool:IsA("Tool") then
-                tool:Activate()
-            end
+        VirtualUser:CaptureController()
+        VirtualUser:Button1Down(Vector2.new(0, 0))
+        task.wait(0.05)
+        VirtualUser:Button1Up(Vector2.new(0, 0))
+    end)
+    -- Также пробуем активировать оружие (на случай, если клик не сработал)
+    pcall(function()
+        local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
+        if tool and tool:IsA("Tool") then
+            tool:Activate()
         end
     end)
 end
@@ -1245,7 +1253,7 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- ГЛАВНЫЙ ЦИКЛ ФАРМА – ИСПРАВЛЕНА ЛОГИКА KILLAURA
+-- ГЛАВНЫЙ ЦИКЛ ФАРМА
 ------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(0.1) do
@@ -1269,7 +1277,7 @@ task.spawn(function()
                     if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character.Humanoid.Health <= 0 then break end
                     ClickAttack()
                     SpamSkills()
-                    task.wait(0.12)
+                    task.wait(0.08) -- чуть быстрее для спама
                 end
                 currentTarget = nil
             else
@@ -1279,12 +1287,12 @@ task.spawn(function()
             continue
         end
 
-        -- 2. KILLAURA – радиус 1000 (исправлено)
+        -- 2. KILLAURA (радиус 1000)
         if _G.KillAuraRadius then
             local myPos = char.HumanoidRootPart.Position
             local enemies = Workspace:FindFirstChild("Enemies") or Workspace
             local nearest = nil
-            local minDist = 1001 -- чуть больше 1000
+            local minDist = 1001
 
             for _, child in ipairs(enemies:GetChildren()) do
                 if child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
@@ -1299,11 +1307,9 @@ task.spawn(function()
             if nearest then
                 currentTarget = nearest
                 EquipWeapon()
-                -- Внутренний цикл атаки
                 while _G.KillAuraRadius and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character.Humanoid.Health > 0 do
-                    -- Проверяем, жив ли текущий враг
                     if not nearest or not nearest.Parent or not nearest:FindFirstChild("Humanoid") or nearest.Humanoid.Health <= 0 then
-                        -- Ищем нового врага
+                        -- ищем нового
                         local newPos = LocalPlayer.Character.HumanoidRootPart.Position
                         local newNearest = nil
                         local newDist = 1001
@@ -1320,15 +1326,12 @@ task.spawn(function()
                             nearest = newNearest
                             currentTarget = newNearest
                         else
-                            -- Нет врагов – выходим из цикла
                             break
                         end
                     end
 
-                    -- Если расстояние до врага стало больше 1000, ищем нового
                     local currentDist = (LocalPlayer.Character.HumanoidRootPart.Position - nearest.HumanoidRootPart.Position).Magnitude
                     if currentDist > 1000 then
-                        -- Ищем другого врага
                         local newPos = LocalPlayer.Character.HumanoidRootPart.Position
                         local newNearest = nil
                         local newDist = 1001
@@ -1349,14 +1352,12 @@ task.spawn(function()
                         end
                     end
 
-                    -- Атакуем
                     ClickAttack()
                     SpamSkills()
-                    task.wait(0.12)
+                    task.wait(0.08)
                 end
                 currentTarget = nil
             else
-                -- Нет врагов в радиусе – ждём
                 task.wait(0.5)
             end
             continue
@@ -1414,7 +1415,7 @@ task.spawn(function()
                         if checkNpc ~= npcName then break end
                         ClickAttack()
                         SpamSkills()
-                        task.wait(0.12)
+                        task.wait(0.08)
                     end
                     currentTarget = nil
                 else

@@ -1,5 +1,5 @@
 -- [[ 🌌 BLACK HOLE HUB | ArtSquadFive | THE ULTIMATE PROGRESSION 🌌 ]]
--- Версия 2.3 – супер-спам кликов (регулируемый интервал)
+-- Версия 2.4 – МАКСИМАЛЬНЫЙ СПАМ КЛИКОВ (с логом в консоль)
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -43,7 +43,7 @@ local _G = {
     FlyEnabled = false,
     FlySpeed = 50,
     Collapsed = false,
-    ClickInterval = 40, -- в миллисекундах
+    ClickInterval = 25, -- мс (по умолчанию 25)
 }
 
 local WeaponsList = {}
@@ -52,6 +52,7 @@ local currentSkillIndex = 1
 local lastSkillTime = 0
 local skillKeys = {Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.V}
 local currentTarget = nil
+local clickCounter = 0
 
 -- СПИСОК БОССОВ
 local BossList = {
@@ -641,25 +642,35 @@ local function EquipWeapon()
     end
 end
 
--- СУПЕР-СПАМ КЛИКОВ (без проверок, просто кликает)
+-- МАКСИМАЛЬНЫЙ СПАМ КЛИКОВ (3 способа одновременно)
 local function ClickAttack()
     if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("Humanoid") or LocalPlayer.Character.Humanoid.Health <= 0 then
         return
     end
-    -- Эмулируем клик через VirtualUser (не мешает GUI)
+    -- Способ 1: VirtualUser
     pcall(function()
         VirtualUser:CaptureController()
         VirtualUser:Button1Down(Vector2.new(0, 0))
-        task.wait(0.02) -- минимальная задержка для регистрации
+        task.wait(0.01)
         VirtualUser:Button1Up(Vector2.new(0, 0))
     end)
-    -- Дополнительно активируем оружие
+    -- Способ 2: VirtualInputManager (мышь)
+    pcall(function()
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+        task.wait(0.01)
+        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+    end)
+    -- Способ 3: активация оружия
     pcall(function()
         local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
         if tool and tool:IsA("Tool") then
             tool:Activate()
         end
     end)
+    clickCounter = clickCounter + 1
+    if clickCounter % 50 == 0 then
+        print("🔹 Кликов отправлено: " .. clickCounter)
+    end
 end
 
 local function SpamSkills()
@@ -1156,10 +1167,10 @@ TeleportPage:GetPropertyChangedSignal("Visible"):Connect(function()
 end)
 
 ------------------------------------------------------------------------
--- НАСТРОЙКИ (добавлен ползунок для интервала кликов)
+-- НАСТРОЙКИ
 ------------------------------------------------------------------------
 CreateSlider(SettingsTab, "Скорость Полета (Автофарм)", 100, 450, _G.FarmSpeed, function(v) _G.FarmSpeed = v end)
-CreateSlider(SettingsTab, "Интервал кликов (мс)", 10, 200, _G.ClickInterval, function(v) 
+CreateSlider(SettingsTab, "Интервал кликов (мс)", 5, 200, _G.ClickInterval, function(v) 
     _G.ClickInterval = v 
 end)
 CreateToggle(SettingsTab, "Noclip (Сквозь Стены)", _G.Noclip, function(s) _G.Noclip = s end)
@@ -1256,7 +1267,7 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- ГЛАВНЫЙ ЦИКЛ ФАРМА (с динамическим интервалом кликов)
+-- ГЛАВНЫЙ ЦИКЛ ФАРМА
 ------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(0.1) do
@@ -1280,7 +1291,7 @@ task.spawn(function()
                     if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character.Humanoid.Health <= 0 then break end
                     ClickAttack()
                     SpamSkills()
-                    task.wait(_G.ClickInterval / 1000) -- используем настраиваемый интервал
+                    task.wait(_G.ClickInterval / 1000)
                 end
                 currentTarget = nil
             else

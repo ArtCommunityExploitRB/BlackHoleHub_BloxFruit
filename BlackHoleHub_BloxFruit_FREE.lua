@@ -1,5 +1,5 @@
 -- [[ 🌌 BLACK HOLE HUB | ArtSquadFive | THE ULTIMATE PROGRESSION 🌌 ]]
--- Версия 2.4 – МАКСИМАЛЬНЫЙ СПАМ КЛИКОВ (с логом в консоль)
+-- Версия 2.6 – убран мульти-таргет, исправлен KillAura, клики без блокировки GUI
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -43,7 +43,7 @@ local _G = {
     FlyEnabled = false,
     FlySpeed = 50,
     Collapsed = false,
-    ClickInterval = 25, -- мс (по умолчанию 25)
+    ClickInterval = 25, -- мс
 }
 
 local WeaponsList = {}
@@ -642,25 +642,25 @@ local function EquipWeapon()
     end
 end
 
--- МАКСИМАЛЬНЫЙ СПАМ КЛИКОВ (3 способа одновременно)
+-- КЛИК – убраны все проверки на GUI, просто отправляем события в фоне
 local function ClickAttack()
     if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("Humanoid") or LocalPlayer.Character.Humanoid.Health <= 0 then
         return
     end
-    -- Способ 1: VirtualUser
+    -- Отправляем клик через VirtualUser
     pcall(function()
         VirtualUser:CaptureController()
         VirtualUser:Button1Down(Vector2.new(0, 0))
         task.wait(0.01)
         VirtualUser:Button1Up(Vector2.new(0, 0))
     end)
-    -- Способ 2: VirtualInputManager (мышь)
+    -- Отправляем через VirtualInputManager (для надёжности)
     pcall(function()
         VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
         task.wait(0.01)
         VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
     end)
-    -- Способ 3: активация оружия
+    -- Активируем оружие
     pcall(function()
         local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
         if tool and tool:IsA("Tool") then
@@ -1267,7 +1267,7 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- ГЛАВНЫЙ ЦИКЛ ФАРМА
+-- ГЛАВНЫЙ ЦИКЛ ФАРМА – только одиночные цели, KillAura исправлен
 ------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(0.1) do
@@ -1278,7 +1278,7 @@ task.spawn(function()
             continue
         end
 
-        -- 1. БОСС
+        -- 1. БОСС (одиночная цель)
         if _G.BossFarmEnabled and _G.BossFarmTarget then
             local boss = FindNPCByName(_G.BossFarmTarget)
             if not boss then
@@ -1301,7 +1301,7 @@ task.spawn(function()
             continue
         end
 
-        -- 2. KILLAURA
+        -- 2. KILLAURA (одиночная цель, радиус 1000) – ИСПРАВЛЕНА СТАБИЛЬНОСТЬ
         if _G.KillAuraRadius then
             local myPos = char.HumanoidRootPart.Position
             local enemies = Workspace:FindFirstChild("Enemies") or Workspace
@@ -1321,8 +1321,11 @@ task.spawn(function()
             if nearest then
                 currentTarget = nearest
                 EquipWeapon()
+                -- Внутренний цикл атаки
                 while _G.KillAuraRadius and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character.Humanoid.Health > 0 do
+                    -- Проверяем, жив ли текущий враг
                     if not nearest or not nearest.Parent or not nearest:FindFirstChild("Humanoid") or nearest.Humanoid.Health <= 0 then
+                        -- Ищем нового врага
                         local newPos = LocalPlayer.Character.HumanoidRootPart.Position
                         local newNearest = nil
                         local newDist = 1001
@@ -1339,10 +1342,11 @@ task.spawn(function()
                             nearest = newNearest
                             currentTarget = newNearest
                         else
-                            break
+                            break -- нет врагов, выходим
                         end
                     end
 
+                    -- Если враг ушёл за радиус – ищем нового
                     local currentDist = (LocalPlayer.Character.HumanoidRootPart.Position - nearest.HumanoidRootPart.Position).Magnitude
                     if currentDist > 1000 then
                         local newPos = LocalPlayer.Character.HumanoidRootPart.Position
@@ -1371,12 +1375,13 @@ task.spawn(function()
                 end
                 currentTarget = nil
             else
+                -- Нет врагов в радиусе
                 task.wait(0.5)
             end
             continue
         end
 
-        -- 3. КВЕСТОВЫЙ ФАРМ
+        -- 3. КВЕСТОВЫЙ АВТОФАРМ
         if _G.AutoFarmLevel then
             pcall(function()
                 local qKey, qId, npcName, isBoss = GetQuestData()
@@ -1519,7 +1524,7 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- ПЛАВНЫЙ ПОЛЕТ И АТАКА
+-- ПЛАВНЫЙ ПОЛЕТ И АТАКА (для одного врага)
 ------------------------------------------------------------------------
 RunService.RenderStepped:Connect(function(deltaTime)
     if not currentTarget then return end

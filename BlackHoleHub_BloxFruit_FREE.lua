@@ -1,5 +1,5 @@
 -- [[ 🌌 BLACK HOLE HUB | ArtSquadFive | THE ULTIMATE PROGRESSION 🌌 ]]
--- Версия 3.3 – надёжные клики, стабильность, адаптивность
+-- Версия 3.4 – исправлены автофарм и KillAura, надёжные клики
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -17,7 +17,7 @@ local LocalPlayer = Players.LocalPlayer
 
 if CoreGui:FindFirstChild("BlackHoleHub") then CoreGui.BlackHoleHub:Destroy() end
 
--- ГЛОБАЛЬНЫЕ НАСТРОЙКИ (локальная таблица, не конфликтует с другими скриптами)
+-- ГЛОБАЛЬНЫЕ НАСТРОЙКИ
 local _G = {
     AutoFarmLevel = false,
     KillAuraRadius = false,
@@ -48,7 +48,7 @@ local _G = {
     SeaBeastFlySpeed = 180,
     SeaBeastHoverHeight = 65,
     SeaBeastTarget = nil,
-    GUIOpen = false, -- флаг, открыто ли наше GUI
+    GUIOpen = false,
 }
 
 local WeaponsList = {}
@@ -700,17 +700,16 @@ local function EquipWeapon()
     end)
 end
 
--- Улучшенная функция кликов: не мешает GUI, отправляет клик в центр экрана
+-- Улучшенная функция кликов: шлём клик в точку (10,10), чтобы не попадать по GUI
 local function ClickAttack()
-    if _G.GUIOpen then return end -- если GUI открыто, не кликаем
+    if _G.GUIOpen then return end
     if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("Humanoid") or LocalPlayer.Character.Humanoid.Health <= 0 then
         return
     end
     pcall(function()
-        VirtualUser:CaptureController()
-        VirtualUser:Button1Down(Vector2.new(0, 0)) -- клик в центр экрана
+        VirtualInputManager:SendMouseButtonEvent(10, 10, 0, true, game, 0)
         task.wait(0.01)
-        VirtualUser:Button1Up(Vector2.new(0, 0))
+        VirtualInputManager:SendMouseButtonEvent(10, 10, 0, false, game, 0)
         local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
         if tool and tool:IsA("Tool") then
             tool:Activate()
@@ -909,7 +908,7 @@ end)
 CreateToggle(FarmTab, "Авто-Спам Скиллов", _G.SpamSkills, function(s) _G.SpamSkills = s end)
 CreateToggle(FarmTab, "Авто-Хаки (Вооружение)", _G.AutoHaki, function(s) _G.AutoHaki = s end)
 CreateToggle(FarmTab, "Авто-Инстинкт (Наблюдение)", _G.AutoInstinct, function(s) _G.AutoInstinct = s end)
-CreateSlider(FarmTab, "Дистанция атаки", 6, 50, _G.FarmDistance, function(v) _G.FarmDistance = v end) -- изменено: 6-50
+CreateSlider(FarmTab, "Дистанция атаки", 6, 50, _G.FarmDistance, function(v) _G.FarmDistance = v end)
 CreateDropdown(FarmTab, "Выбор стороны атаки", {"Сверху", "Снизу", "Со спины"}, function(v) _G.AttackSide = v end)
 CreateDropdown(FarmTab, "Выбери Оружие", GetWeapons, function(v) _G.SelectedWeapon = v end)
 
@@ -1218,7 +1217,7 @@ task.spawn(function()
                     local tween = FlyObjectTo(targetObject, targetPosition)
                     if tween then tween.Completed:Wait() end
                     while seaBeast and seaBeast:FindFirstChild("Humanoid") and seaBeast.Humanoid.Health > 0 and _G.SeaBeastFarm do
-                        ClickAttack() -- используется обновлённая функция
+                        ClickAttack()
                         task.wait(_G.ClickInterval / 1000)
                     end
                     _G.SeaBeastTarget = nil
@@ -1430,7 +1429,7 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- ГЛАВНЫЙ ЦИКЛ ФАРМА (с приоритетами и защитой)
+-- ГЛАВНЫЙ ЦИКЛ ФАРМА (исправлен)
 ------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(0.1) do
@@ -1441,6 +1440,7 @@ task.spawn(function()
             continue
         end
 
+        -- Приоритет: Босс > KillAura > Автофарм
         local activeBoss = _G.BossFarmEnabled and _G.BossFarmTarget ~= nil
         local activeKillAura = _G.KillAuraRadius
         local activeAutoFarm = _G.AutoFarmLevel
@@ -1526,7 +1526,9 @@ task.spawn(function()
                     return
                 end
 
+                -- Важное исправление: если квест завершён (окно скрыто), сбрасываем текущего NPC
                 if not mainGui.Quest.Visible then
+                    _G.CurrentRunningNPC = nil
                     task.wait(0.5)
                     return
                 end

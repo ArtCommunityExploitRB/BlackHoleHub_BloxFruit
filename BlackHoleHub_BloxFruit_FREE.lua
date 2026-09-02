@@ -1,5 +1,5 @@
 -- [[ 🌌 BLACK HOLE HUB | ArtSquadFive | THE ULTIMATE PROGRESSION 🌌 ]]
--- Версия 3.1 – адаптивный интерфейс + анимация + увеличенная дистанция атаки
+-- Версия 3.3 – надёжные клики, стабильность, адаптивность
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -17,7 +17,7 @@ local LocalPlayer = Players.LocalPlayer
 
 if CoreGui:FindFirstChild("BlackHoleHub") then CoreGui.BlackHoleHub:Destroy() end
 
--- ГЛОБАЛЬНЫЕ НАСТРОЙКИ
+-- ГЛОБАЛЬНЫЕ НАСТРОЙКИ (локальная таблица, не конфликтует с другими скриптами)
 local _G = {
     AutoFarmLevel = false,
     KillAuraRadius = false,
@@ -43,11 +43,12 @@ local _G = {
     FlyEnabled = false,
     FlySpeed = 50,
     Collapsed = false,
-    ClickInterval = 25, -- мс
+    ClickInterval = 25,
     SeaBeastFarm = false,
     SeaBeastFlySpeed = 180,
     SeaBeastHoverHeight = 65,
     SeaBeastTarget = nil,
+    GUIOpen = false, -- флаг, открыто ли наше GUI
 }
 
 local WeaponsList = {}
@@ -225,7 +226,6 @@ local screenW, screenH = viewport.X, viewport.Y
 local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
 local isConsole = GuiService:IsTenFootInterface()
 
--- Определяем тип устройства
 local deviceType
 if isConsole then
     deviceType = "console"
@@ -239,7 +239,6 @@ else
     deviceType = "pc"
 end
 
--- Базовые размеры окна (уменьшены для телефона)
 local baseWidth, baseHeight
 if deviceType == "console" then
     baseWidth, baseHeight = 900, 600
@@ -249,12 +248,11 @@ elseif deviceType == "phone" then
 elseif deviceType == "tablet" then
     baseWidth = math.min(screenW * 0.7, 500)
     baseHeight = math.min(screenH * 0.7, 420)
-else -- pc
+else
     baseWidth = math.min(screenW * 0.6, 700)
     baseHeight = math.min(screenH * 0.6, 500)
 end
 
--- Ширина боковой панели
 local sidebarWidth = 160
 if deviceType == "phone" then
     sidebarWidth = 100
@@ -264,7 +262,6 @@ elseif deviceType == "console" then
     sidebarWidth = 180
 end
 
--- Размеры шрифтов
 local fontSizeSmall = 11
 local fontSizeMedium = 13
 local fontSizeLarge = 16
@@ -290,6 +287,7 @@ BlackHoleHub.Name = "BlackHoleHub"
 BlackHoleHub.Parent = CoreGui
 BlackHoleHub.ResetOnSpawn = false
 BlackHoleHub.IgnoreGuiInset = true
+BlackHoleHub.DisplayOrder = 999
 
 -- ИНТРО-АНИМАЦИЯ
 local IntroFrame = Instance.new("Frame", BlackHoleHub)
@@ -414,6 +412,7 @@ Instance.new("UIStroke", MobileToggleBtn).Color = Color3.fromRGB(255,255,255)
 MobileToggleBtn.MouseButton1Click:Connect(function()
     if _G.Collapsed then CollapseToggle() end
     Main.Visible = not Main.Visible
+    _G.GUIOpen = Main.Visible
 end)
 
 -- Drag
@@ -688,30 +687,30 @@ local function EquipWeapon()
     local humanoid = char:FindFirstChildOfClass("Humanoid")
     if not humanoid or humanoid.Health <= 0 then return end
 
-    if char:FindFirstChild(_G.SelectedWeapon) then
-        return
-    end
-
-    local backpack = LocalPlayer:FindFirstChild("Backpack")
-    if backpack then
-        local tool = backpack:FindFirstChild(_G.SelectedWeapon)
-        if tool then
-            tool.Parent = char
-            task.wait(0.05)
+    pcall(function()
+        if char:FindFirstChild(_G.SelectedWeapon) then return end
+        local backpack = LocalPlayer:FindFirstChild("Backpack")
+        if backpack then
+            local tool = backpack:FindFirstChild(_G.SelectedWeapon)
+            if tool then
+                tool.Parent = char
+                task.wait(0.05)
+            end
         end
-    end
+    end)
 end
 
+-- Улучшенная функция кликов: не мешает GUI, отправляет клик в центр экрана
 local function ClickAttack()
+    if _G.GUIOpen then return end -- если GUI открыто, не кликаем
     if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("Humanoid") or LocalPlayer.Character.Humanoid.Health <= 0 then
         return
     end
     pcall(function()
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+        VirtualUser:CaptureController()
+        VirtualUser:Button1Down(Vector2.new(0, 0)) -- клик в центр экрана
         task.wait(0.01)
-        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
-    end)
-    pcall(function()
+        VirtualUser:Button1Up(Vector2.new(0, 0))
         local tool = LocalPlayer.Character:FindFirstChildOfClass("Tool")
         if tool and tool:IsA("Tool") then
             tool:Activate()
@@ -752,9 +751,11 @@ end
 local function FindNPCByName(name)
     local enemies = Workspace:FindFirstChild("Enemies") or Workspace
     for _, child in ipairs(enemies:GetChildren()) do
-        if child.Name == name and child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
-            return child
-        end
+        pcall(function()
+            if child.Name == name and child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
+                return child
+            end
+        end)
     end
     return nil
 end
@@ -763,14 +764,16 @@ local function GetAliveBosses()
     local alive = {}
     local enemies = Workspace:FindFirstChild("Enemies") or Workspace
     for _, child in ipairs(enemies:GetChildren()) do
-        if child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
-            for _, bossName in ipairs(BossList) do
-                if child.Name == bossName then
-                    table.insert(alive, bossName)
-                    break
+        pcall(function()
+            if child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
+                for _, bossName in ipairs(BossList) do
+                    if child.Name == bossName then
+                        table.insert(alive, bossName)
+                        break
+                    end
                 end
             end
-        end
+        end)
     end
     return alive
 end
@@ -849,10 +852,11 @@ local function GetQuestData()
                     local enemies = Workspace:FindFirstChild("Enemies") or Workspace
                     local bossAlive = false
                     for _, enemy in ipairs(enemies:GetChildren()) do
-                        if enemy.Name == tName and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-                            bossAlive = true
-                            break
-                        end
+                        pcall(function()
+                            if enemy.Name == tName and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
+                                bossAlive = true
+                            end
+                        end)
                     end
                     if bossAlive then
                         highestLvl = info.LevelReq
@@ -1214,9 +1218,7 @@ task.spawn(function()
                     local tween = FlyObjectTo(targetObject, targetPosition)
                     if tween then tween.Completed:Wait() end
                     while seaBeast and seaBeast:FindFirstChild("Humanoid") and seaBeast.Humanoid.Health > 0 and _G.SeaBeastFarm do
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
-                        task.wait(0.01)
-                        VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                        ClickAttack() -- используется обновлённая функция
                         task.wait(_G.ClickInterval / 1000)
                     end
                     _G.SeaBeastTarget = nil
@@ -1428,7 +1430,7 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- ГЛАВНЫЙ ЦИКЛ ФАРМА
+-- ГЛАВНЫЙ ЦИКЛ ФАРМА (с приоритетами и защитой)
 ------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(0.1) do
@@ -1439,75 +1441,77 @@ task.spawn(function()
             continue
         end
 
-        -- 1. БОСС
-        if _G.BossFarmEnabled and _G.BossFarmTarget then
-            local boss = FindNPCByName(_G.BossFarmTarget)
-            if not boss then
-                boss = LoadBoss(_G.BossFarmTarget)
-            end
-            if boss then
-                currentTarget = boss
-                EquipWeapon()
-                while boss and boss.Parent and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 and _G.BossFarmEnabled and _G.BossFarmTarget do
-                    if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character.Humanoid.Health <= 0 then break end
-                    EquipWeapon()
-                    ClickAttack()
-                    SpamSkills()
-                    task.wait(_G.ClickInterval / 1000)
+        local activeBoss = _G.BossFarmEnabled and _G.BossFarmTarget ~= nil
+        local activeKillAura = _G.KillAuraRadius
+        local activeAutoFarm = _G.AutoFarmLevel
+
+        if activeBoss then
+            pcall(function()
+                local boss = FindNPCByName(_G.BossFarmTarget)
+                if not boss then
+                    local spawnPos = BossSpawnLocations[_G.BossFarmTarget]
+                    if spawnPos then
+                        SmoothFlyTween(spawnPos)
+                        task.wait(2)
+                        boss = FindNPCByName(_G.BossFarmTarget)
+                    end
                 end
-                currentTarget = nil
-            else
-                currentTarget = nil
-                task.wait(0.5)
-            end
+                if boss then
+                    currentTarget = boss
+                    EquipWeapon()
+                    while boss and boss.Parent and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 and _G.BossFarmEnabled do
+                        if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character.Humanoid.Health <= 0 then break end
+                        EquipWeapon()
+                        ClickAttack()
+                        SpamSkills()
+                        task.wait(_G.ClickInterval / 1000)
+                    end
+                    currentTarget = nil
+                end
+            end)
             continue
         end
 
-        -- 2. KILLAURA
-        if _G.KillAuraRadius then
-            local myPos = char.HumanoidRootPart.Position
-            local enemies = Workspace:FindFirstChild("Enemies") or Workspace
-            local nearest = nil
-            local minDist = 1001
-
-            for _, child in ipairs(enemies:GetChildren()) do
-                if child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
-                    local dist = (myPos - child.HumanoidRootPart.Position).Magnitude
-                    if dist <= 1000 and dist < minDist then
-                        minDist = dist
-                        nearest = child
-                    end
+        if activeKillAura then
+            pcall(function()
+                local myPos = char.HumanoidRootPart.Position
+                local enemies = Workspace:FindFirstChild("Enemies") or Workspace
+                local nearest = nil
+                local minDist = 1001
+                for _, child in ipairs(enemies:GetChildren()) do
+                    pcall(function()
+                        if child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
+                            local dist = (myPos - child.HumanoidRootPart.Position).Magnitude
+                            if dist <= 1000 and dist < minDist then
+                                minDist = dist
+                                nearest = child
+                            end
+                        end
+                    end)
                 end
-            end
 
-            if nearest then
-                currentTarget = nearest
-                EquipWeapon()
-                while _G.KillAuraRadius and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") and LocalPlayer.Character.Humanoid.Health > 0 do
-                    if not nearest or not nearest.Parent or not nearest:FindFirstChild("Humanoid") or nearest.Humanoid.Health <= 0 then
-                        break
-                    end
-                    local dist = (LocalPlayer.Character.HumanoidRootPart.Position - nearest.HumanoidRootPart.Position).Magnitude
-                    if dist > 1000 then
-                        break
-                    end
+                if nearest then
+                    currentTarget = nearest
                     EquipWeapon()
-                    ClickAttack()
-                    SpamSkills()
-                    task.wait(_G.ClickInterval / 1000)
+                    while nearest and nearest.Parent and nearest:FindFirstChild("Humanoid") and nearest.Humanoid.Health > 0 and _G.KillAuraRadius do
+                        if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character.Humanoid.Health <= 0 then break end
+                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - nearest.HumanoidRootPart.Position).Magnitude
+                        if dist > 1000 then break end
+                        EquipWeapon()
+                        ClickAttack()
+                        SpamSkills()
+                        task.wait(_G.ClickInterval / 1000)
+                    end
+                    currentTarget = nil
                 end
-                currentTarget = nil
-            else
-                task.wait(0.5)
-            end
+            end)
             continue
         end
 
-        -- 3. КВЕСТОВЫЙ АВТОФАРМ
-        if _G.AutoFarmLevel then
+        if activeAutoFarm then
             pcall(function()
                 local qKey, qId, npcName, isBoss = GetQuestData()
-                if not npcName then task.wait(0.5) return end
+                if not npcName then return end
 
                 local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
                 if not mainGui or not mainGui:FindFirstChild("Quest") then return end
@@ -1532,13 +1536,15 @@ task.spawn(function()
                 local nearest = nil
                 local minDist = math.huge
                 for _, child in ipairs(enemies:GetChildren()) do
-                    if child.Name == npcName and child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
-                        local dist = (myPos - child.HumanoidRootPart.Position).Magnitude
-                        if dist < minDist then
-                            minDist = dist
-                            nearest = child
+                    pcall(function()
+                        if child.Name == npcName and child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
+                            local dist = (myPos - child.HumanoidRootPart.Position).Magnitude
+                            if dist < minDist then
+                                minDist = dist
+                                nearest = child
+                            end
                         end
-                    end
+                    end)
                 end
                 currentTarget = nearest
 
@@ -1569,8 +1575,6 @@ task.spawn(function()
                         else
                             char.HumanoidRootPart.CFrame = CFrame.new(spawnPos)
                         end
-                    else
-                        task.wait(0.5)
                     end
                 end
             end)

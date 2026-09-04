@@ -1,5 +1,5 @@
 -- [[ 🌌 BLACK HOLE HUB | ArtSquadFive | THE ULTIMATE PROGRESSION 🌌 ]]
--- Версия 3.4 – исправлены автофарм и KillAura, надёжные клики
+-- Версия 3.7 – финальный полный код
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -12,6 +12,7 @@ local VirtualUser = game:GetService("VirtualUser")
 local VirtualInputManager = game:GetService("VirtualInputManager")
 local HttpService = game:GetService("HttpService")
 local GuiService = game:GetService("GuiService")
+local Lighting = game:GetService("Lighting")
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -48,6 +49,14 @@ local _G = {
     SeaBeastFlySpeed = 180,
     SeaBeastHoverHeight = 65,
     SeaBeastTarget = nil,
+    LeviathanFarm = false,
+    TerrorsharkFarm = false,
+    HydraFarm = false,
+    GhostShipFarm = false,
+    PiranhaFarm = false,
+    SeaEventFlySpeed = 220,
+    SeaEventHoverHeight = 85,
+    FullBrightEnabled = false,
     GUIOpen = false,
 }
 
@@ -493,7 +502,7 @@ local function CreateTab(name)
 end
 
 ------------------------------------------------------------------------
--- КОНСТРУКТОРЫ ЭЛЕМЕНТОВ (с адаптивными шрифтами)
+-- КОНСТРУКТОРЫ ЭЛЕМЕНТОВ
 ------------------------------------------------------------------------
 local function CreateToggle(parent, text, default, callback)
     local Frame = Instance.new("Frame", parent)
@@ -700,7 +709,6 @@ local function EquipWeapon()
     end)
 end
 
--- Улучшенная функция кликов: шлём клик в точку (10,10), чтобы не попадать по GUI
 local function ClickAttack()
     if _G.GUIOpen then return end
     if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("Humanoid") or LocalPlayer.Character.Humanoid.Health <= 0 then
@@ -799,16 +807,19 @@ local function GetMyBoat()
     return nil
 end
 
-local function FindSeaBeast()
+local function FindSeaEvent(targetName)
     for _, obj in pairs(Workspace:GetChildren()) do
-        if (obj.Name:find("Sea Beast") or obj.Name:find("SeaBeast")) and obj:FindFirstChild("Humanoid") and obj.Humanoid.Health > 0 then
+        if obj.Name:find(targetName) and obj:FindFirstChild("Humanoid") and obj.Humanoid.Health > 0 then
             return obj
         end
     end
-    if Workspace:FindFirstChild("SeaBeasts") then
-        for _, obj in pairs(Workspace.SeaBeasts:GetChildren()) do
-            if obj:FindFirstChild("Humanoid") and obj.Humanoid.Health > 0 then
-                return obj
+    local folders = {Workspace:FindFirstChild("SeaBeasts"), Workspace:FindFirstChild("SeaEvents"), Workspace:FindFirstChild("Bosses")}
+    for _, folder in ipairs(folders) do
+        if folder then
+            for _, obj in ipairs(folder:GetChildren()) do
+                if obj.Name:find(targetName) and obj:FindFirstChild("Humanoid") and obj.Humanoid.Health > 0 then
+                    return obj
+                end
             end
         end
     end
@@ -819,11 +830,53 @@ local function FlyObjectTo(object, targetCFrame)
     local primaryPart = object:IsA("Model") and (object.PrimaryPart or object:FindFirstChild("Engine") or object:FindFirstChild("VehicleSeat") or object:FindFirstChild("HumanoidRootPart"))
     if not primaryPart then return nil end
     local distance = (primaryPart.Position - targetCFrame.Position).Magnitude
-    local timeToFly = distance / _G.SeaBeastFlySpeed
+    local timeToFly = distance / _G.SeaEventFlySpeed
     local tweenInfo = TweenInfo.new(timeToFly, Enum.EasingStyle.Linear)
     local tween = TweenService:Create(primaryPart, tweenInfo, {CFrame = targetCFrame})
     tween:Play()
     return tween
+end
+
+local function FarmSeaEvent(eventName)
+    if not _G[eventName.."Farm"] then return end
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+
+    local boat = GetMyBoat()
+    local targetObject = boat or (char:FindFirstChild("HumanoidRootPart") and char)
+
+    local seaEvent = FindSeaEvent(eventName)
+    if not seaEvent then
+        local targetCFrame = CFrame.new(9000, 15, 9000)
+        local primary = targetObject:IsA("Model") and (targetObject.PrimaryPart or targetObject:FindFirstChild("Engine") or targetObject:FindFirstChild("VehicleSeat") or targetObject:FindFirstChild("HumanoidRootPart")) or targetObject:FindFirstChild("HumanoidRootPart")
+        if primary and (primary.Position - targetCFrame.Position).Magnitude > 300 then
+            local tween = FlyObjectTo(targetObject, targetCFrame)
+            if tween then
+                while tween.PlaybackState == Enum.PlaybackState.Playing and not FindSeaEvent(eventName) do
+                    task.wait(0.5)
+                end
+            end
+        end
+        return
+    end
+
+    local head = seaEvent:FindFirstChild("Head") or seaEvent:FindFirstChild("HumanoidRootPart") or seaEvent.PrimaryPart
+    if head then
+        local targetPosition = head.CFrame * CFrame.new(0, _G.SeaEventHoverHeight, 0)
+        local tween = FlyObjectTo(targetObject, targetPosition)
+        if tween then tween.Completed:Wait() end
+
+        while seaEvent and seaEvent:FindFirstChild("Humanoid") and seaEvent.Humanoid.Health > 0 and _G[eventName.."Farm"] do
+            if not char or not char:FindFirstChild("HumanoidRootPart") or char.Humanoid.Health <= 0 then break end
+            if targetObject:IsA("Model") and targetObject.PrimaryPart then
+                targetObject.PrimaryPart.CFrame = head.CFrame * CFrame.new(0, _G.SeaEventHoverHeight, 0)
+            elseif char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = head.CFrame * CFrame.new(0, _G.SeaEventHoverHeight, 0)
+            end
+            ClickAttack()
+            task.wait(_G.ClickInterval / 1000)
+        end
+    end
 end
 
 ------------------------------------------------------------------------
@@ -1084,7 +1137,6 @@ BtnStop.MouseButton1Click:Connect(function()
     DropBtn.Text = "Выбрать..."
 end)
 
--- Локальная функция для toggle внутри рамки
 local function CreateToggleInline(parent, text, default, callback)
     local Frame = Instance.new("Frame", parent)
     Frame.Size = UDim2.new(1, 0, 0, 35)
@@ -1114,7 +1166,6 @@ local function CreateToggleInline(parent, text, default, callback)
     end)
 end
 
--- Toggle для босса
 local ToggleRow = Instance.new("Frame", BossFrame)
 ToggleRow.Size = UDim2.new(1, 0, 0, 40)
 ToggleRow.Position = UDim2.new(0, 0, 0, 130)
@@ -1131,105 +1182,49 @@ CreateToggleInline(ToggleRow, "Авто-фарм босса", false, function(s)
     end
 end)
 
--- ====== SEA BEAST СЕКЦИЯ ======
-local SeaBeastSeparator = Instance.new("Frame", BossTab)
-SeaBeastSeparator.Size = UDim2.new(1, 0, 0, 10)
-SeaBeastSeparator.BackgroundTransparency = 1
+-- ====== МОРСКИЕ СОБЫТИЯ ======
+local SeaEventsSeparator = Instance.new("Frame", BossTab)
+SeaEventsSeparator.Size = UDim2.new(1, 0, 0, 10)
+SeaEventsSeparator.BackgroundTransparency = 1
 
-local SeaBeastSection = Instance.new("TextLabel", BossTab)
-SeaBeastSection.Size = UDim2.new(1, 0, 0, 30)
-SeaBeastSection.BackgroundTransparency = 1
-SeaBeastSection.Text = "🌊 Фарм Sea Beast"
-SeaBeastSection.TextColor3 = Color3.fromRGB(255, 140, 0)
-SeaBeastSection.Font = Enum.Font.GothamBold
-SeaBeastSection.TextSize = fontSizeMedium
-SeaBeastSection.TextXAlignment = Enum.TextXAlignment.Left
+local SeaEventsLabel = Instance.new("TextLabel", BossTab)
+SeaEventsLabel.Size = UDim2.new(1, 0, 0, 30)
+SeaEventsLabel.BackgroundTransparency = 1
+SeaEventsLabel.Text = "🌊 Морские события"
+SeaEventsLabel.TextColor3 = Color3.fromRGB(255, 140, 0)
+SeaEventsLabel.Font = Enum.Font.GothamBold
+SeaEventsLabel.TextSize = fontSizeMedium
+SeaEventsLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-CreateToggleInline(BossTab, "Авто-фарм Sea Beast", false, function(s)
+CreateToggleInline(BossTab, "Фарм Sea Beast", _G.SeaBeastFarm, function(s)
     _G.SeaBeastFarm = s
-    if not s then
-        _G.SeaBeastTarget = nil
-        StatusLabel.Text = "Фарм Sea Beast остановлен"
-    else
-        StatusLabel.Text = "Фарм Sea Beast включён"
-    end
+    if not s then _G.SeaBeastTarget = nil end
 end)
 
-CreateSlider(BossTab, "Скорость полёта (Sea Beast)", 50, 350, _G.SeaBeastFlySpeed, function(v) _G.SeaBeastFlySpeed = v end)
-CreateSlider(BossTab, "Высота над Sea Beast", 40, 120, _G.SeaBeastHoverHeight, function(v) _G.SeaBeastHoverHeight = v end)
-
--- Обновление статуса боссов
-task.spawn(function()
-    while task.wait(10) do
-        local alive = GetAliveBosses()
-        if #alive == 0 then
-            StatusLabel.Text = "Нет живых боссов"
-            if not DropList.Visible then
-                DropBtn.Text = "Нет боссов"
-            end
-        else
-            StatusLabel.Text = "Найдено боссов: " .. #alive
-            if not DropList.Visible and _G.BossFarmTarget and FindNPCByName(_G.BossFarmTarget) then
-                DropBtn.Text = _G.BossFarmTarget
-            elseif not DropList.Visible then
-                DropBtn.Text = "Выбрать..."
-            end
-        end
-        if _G.BossFarmEnabled and _G.BossFarmTarget then
-            local boss = FindNPCByName(_G.BossFarmTarget)
-            if boss then
-                currentTarget = boss
-            else
-                LoadBoss(_G.BossFarmTarget)
-            end
-        end
-    end
+CreateToggleInline(BossTab, "Фарм Leviathan", _G.LeviathanFarm, function(s)
+    _G.LeviathanFarm = s
 end)
 
--- Sea Beast Farm Loop
-task.spawn(function()
-    while task.wait(1) do
-        if _G.SeaBeastFarm then
-            local boat = GetMyBoat()
-            local targetObject = boat or (LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") and LocalPlayer.Character)
-            if not targetObject then
-                task.wait(1)
-                continue
-            end
-
-            local seaBeast = FindSeaBeast()
-            if not seaBeast then
-                local deepSeaCFrame = CFrame.new(9000, 15, 9000)
-                local primary = targetObject:IsA("Model") and (targetObject.PrimaryPart or targetObject:FindFirstChild("Engine") or targetObject:FindFirstChild("VehicleSeat") or targetObject:FindFirstChild("HumanoidRootPart")) or targetObject
-                if primary and (primary.Position - deepSeaCFrame.Position).Magnitude > 300 then
-                    local tween = FlyObjectTo(targetObject, deepSeaCFrame)
-                    if tween then
-                        while tween.PlaybackState == Enum.PlaybackState.Playing and _G.SeaBeastFarm and not FindSeaBeast() do
-                            task.wait(0.5)
-                        end
-                    end
-                end
-            else
-                _G.SeaBeastTarget = seaBeast
-                local head = seaBeast:FindFirstChild("Head") or seaBeast:FindFirstChild("HumanoidRootPart")
-                if head then
-                    local targetPosition = head.CFrame * CFrame.new(0, _G.SeaBeastHoverHeight, 0)
-                    local tween = FlyObjectTo(targetObject, targetPosition)
-                    if tween then tween.Completed:Wait() end
-                    while seaBeast and seaBeast:FindFirstChild("Humanoid") and seaBeast.Humanoid.Health > 0 and _G.SeaBeastFarm do
-                        ClickAttack()
-                        task.wait(_G.ClickInterval / 1000)
-                    end
-                    _G.SeaBeastTarget = nil
-                end
-            end
-        end
-    end
+CreateToggleInline(BossTab, "Фарм Terrorshark", _G.TerrorsharkFarm, function(s)
+    _G.TerrorsharkFarm = s
 end)
 
-------------------------------------------------------------------------
--- ВКЛАДКА TELEPORT
-------------------------------------------------------------------------
+CreateToggleInline(BossTab, "Фарм Hydra", _G.HydraFarm, function(s)
+    _G.HydraFarm = s
+end)
+
+CreateToggleInline(BossTab, "Фарм Ghost Ship", _G.GhostShipFarm, function(s)
+    _G.GhostShipFarm = s
+end)
+
+CreateToggleInline(BossTab, "Фарм Piranha", _G.PiranhaFarm, function(s)
+    _G.PiranhaFarm = s
+end)
+
+CreateSlider(BossTab, "Скорость полёта (Sea Events)", 100, 350, _G.SeaEventFlySpeed, function(v) _G.SeaEventFlySpeed = v end)
+CreateSlider(BossTab, "Высота над событием", 50, 150, _G.SeaEventHoverHeight, function(v) _G.SeaEventHoverHeight = v end)
+
+-- ====== ТЕЛЕПОРТ ======
 local TeleportPage = TeleportTab
 
 local function CreateLocationGroup(parent, seaName, locations)
@@ -1343,93 +1338,25 @@ CreateToggle(SettingsTab, "Своя Скорость Игрока", _G.WalkSpeed
 CreateSlider(SettingsTab, "Скорость (WalkSpeed)", 16, 250, _G.WalkSpeed, function(v) _G.WalkSpeed = v end)
 CreateToggle(SettingsTab, "Свой Прыжок", _G.JumpPowerEnabled, function(s) _G.JumpPowerEnabled = s end)
 CreateSlider(SettingsTab, "Прыжок (JumpPower)", 50, 250, _G.JumpPower, function(v) _G.JumpPower = v end)
-
-------------------------------------------------------------------------
--- ПОТОКИ НАСТРОЕК
-------------------------------------------------------------------------
-RunService.Stepped:Connect(function()
-    if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        local hum = LocalPlayer.Character.Humanoid
-        if _G.WalkSpeedEnabled then hum.WalkSpeed = _G.WalkSpeed end
-        if _G.JumpPowerEnabled then hum.JumpPower = _G.JumpPower end
-    end
-    if (_G.Noclip or _G.AutoFarmLevel or _G.KillAuraRadius or _G.BossFarmEnabled) and LocalPlayer.Character then
-        for _, p in pairs(LocalPlayer.Character:GetDescendants()) do
-            if p:IsA("BasePart") then p.CanCollide = false end
-        end
-    end
-end)
-
-UserInputService.JumpRequest:Connect(function()
-    if _G.InfJump and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("Humanoid") then
-        LocalPlayer.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-    end
-end)
-
-local flyBv, flyBg
-RunService.RenderStepped:Connect(function()
-    if _G.FlyEnabled and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-        local root = LocalPlayer.Character.HumanoidRootPart
-        local cam = Workspace.CurrentCamera
-        if not flyBv then
-            flyBv = Instance.new("BodyVelocity")
-            flyBv.MaxForce = Vector3.new(9e9, 9e9, 9e9)
-            flyBv.Parent = root
-        end
-        if not flyBg then
-            flyBg = Instance.new("BodyGyro")
-            flyBg.MaxTorque = Vector3.new(9e9, 9e9, 9e9)
-            flyBg.P = 9e4
-            flyBg.Parent = root
-        end
-        flyBg.CFrame = cam.CFrame
-        local moveDir = Vector3.new()
-        if UserInputService:IsKeyDown(Enum.KeyCode.W) then moveDir = moveDir + cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.S) then moveDir = moveDir - cam.CFrame.LookVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.A) then moveDir = moveDir - cam.CFrame.RightVector end
-        if UserInputService:IsKeyDown(Enum.KeyCode.D) then moveDir = moveDir + cam.CFrame.RightVector end
-        flyBv.Velocity = moveDir * _G.FlySpeed
+CreateToggle(SettingsTab, "FullBright (Яркость)", _G.FullBrightEnabled, function(s)
+    _G.FullBrightEnabled = s
+    if s then
+        Lighting.Brightness = 2
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = false
+        Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
     else
-        if flyBv then flyBv:Destroy(); flyBv = nil end
-        if flyBg then flyBg:Destroy(); flyBg = nil end
+        Lighting.Brightness = 1
+        Lighting.ClockTime = 14
+        Lighting.FogEnd = 100000
+        Lighting.GlobalShadows = true
+        Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
     end
 end)
 
 ------------------------------------------------------------------------
--- АВТО-ИНСТИНКТ И АВТО-ХАКИ
-------------------------------------------------------------------------
-task.spawn(function()
-    while task.wait(1.5) do
-        if not (_G.AutoFarmLevel or _G.KillAuraRadius or _G.BossFarmEnabled) then continue end
-        local char = LocalPlayer.Character
-        if char and char:FindFirstChild("Humanoid") and char.Humanoid.Health > 0 then
-            if _G.AutoHaki then
-                if not char:FindFirstChild("HasBuso") then
-                    local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-                    if remotes and remotes:FindFirstChild("CommF_") then
-                        remotes.CommF_:InvokeServer("Buso")
-                    end
-                end
-            end
-            if _G.AutoInstinct then
-                local isInstinctOn = false
-                if Workspace.CurrentCamera:FindFirstChild("CameraVision") or Workspace.CurrentCamera:FindFirstChild("Vision") or (LocalPlayer.PlayerGui:FindFirstChild("Main") and LocalPlayer.PlayerGui.Main:FindFirstChild("Dodge")) then
-                    isInstinctOn = true
-                end
-                if not isInstinctOn and not _G.InstinctCooldown then
-                    _G.InstinctCooldown = true
-                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
-                    task.wait(0.1)
-                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
-                    task.delay(2, function() _G.InstinctCooldown = false end)
-                end
-            end
-        end
-    end
-end)
-
-------------------------------------------------------------------------
--- ГЛАВНЫЙ ЦИКЛ ФАРМА (исправлен)
+-- ГЛАВНЫЙ ЦИКЛ ФАРМА
 ------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(0.1) do
@@ -1440,12 +1367,8 @@ task.spawn(function()
             continue
         end
 
-        -- Приоритет: Босс > KillAura > Автофарм
-        local activeBoss = _G.BossFarmEnabled and _G.BossFarmTarget ~= nil
-        local activeKillAura = _G.KillAuraRadius
-        local activeAutoFarm = _G.AutoFarmLevel
-
-        if activeBoss then
+        -- 1. БОСС
+        if _G.BossFarmEnabled and _G.BossFarmTarget then
             pcall(function()
                 local boss = FindNPCByName(_G.BossFarmTarget)
                 if not boss then
@@ -1472,7 +1395,16 @@ task.spawn(function()
             continue
         end
 
-        if activeKillAura then
+        -- 2. МОРСКИЕ СОБЫТИЯ
+        if _G.SeaBeastFarm then FarmSeaEvent("SeaBeast") end
+        if _G.LeviathanFarm then FarmSeaEvent("Leviathan") end
+        if _G.TerrorsharkFarm then FarmSeaEvent("Terrorshark") end
+        if _G.HydraFarm then FarmSeaEvent("Hydra") end
+        if _G.GhostShipFarm then FarmSeaEvent("Ghost Ship") end
+        if _G.PiranhaFarm then FarmSeaEvent("Piranha") end
+
+        -- 3. KILLAURA
+        if _G.KillAuraRadius then
             pcall(function()
                 local myPos = char.HumanoidRootPart.Position
                 local enemies = Workspace:FindFirstChild("Enemies") or Workspace
@@ -1508,7 +1440,8 @@ task.spawn(function()
             continue
         end
 
-        if activeAutoFarm then
+        -- 4. АВТОФАРМ КВЕСТОВ
+        if _G.AutoFarmLevel then
             pcall(function()
                 local qKey, qId, npcName, isBoss = GetQuestData()
                 if not npcName then return end
@@ -1526,7 +1459,6 @@ task.spawn(function()
                     return
                 end
 
-                -- Важное исправление: если квест завершён (окно скрыто), сбрасываем текущего NPC
                 if not mainGui.Quest.Visible then
                     _G.CurrentRunningNPC = nil
                     task.wait(0.5)

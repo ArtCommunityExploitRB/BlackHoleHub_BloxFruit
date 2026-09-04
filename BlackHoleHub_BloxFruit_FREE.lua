@@ -1,5 +1,5 @@
 -- [[ 🌌 BLACK HOLE HUB | ArtSquadFive | THE ULTIMATE PROGRESSION 🌌 ]]
--- Версия 4.0 – Low End Mode, Конфиги с сохранением в папку BlackHoleHub/Config
+-- Версия 4.1 – исправлены Авто-Хаки, Авто-Инстинкт и Спам скиллов
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -70,7 +70,9 @@ local lastSkillTime = 0
 local skillKeys = {Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.V}
 local currentTarget = nil
 local clickCounter = 0
-local lastRenderUpdate = 0 -- для LowEndMode
+local lastRenderUpdate = 0
+local lastHakiTime = 0
+local lastInstinctTime = 0
 
 -- СПИСОК БОССОВ
 local BossList = {
@@ -1606,6 +1608,43 @@ end
 BuildGUI()
 
 ------------------------------------------------------------------------
+-- АВТО-ХАКИ И АВТО-ИНСТИНКТ (отдельный поток)
+------------------------------------------------------------------------
+task.spawn(function()
+    while task.wait(0.5) do
+        pcall(function()
+            local char = LocalPlayer.Character
+            if not char or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then return end
+
+            -- Авто-Хаки (Buso Haki) - клавиша J
+            if _G.AutoHaki and tick() - lastHakiTime >= 2.5 then
+                pcall(function()
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.J, false, game)
+                    task.wait(0.1)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.J, false, game)
+                end)
+                lastHakiTime = tick()
+            end
+
+            -- Авто-Инстинкт (Observation Haki) - клавиша E
+            if _G.AutoInstinct and tick() - lastInstinctTime >= 2.5 then
+                pcall(function()
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                    task.wait(0.1)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                end)
+                lastInstinctTime = tick()
+            end
+
+            -- Спам скиллов (отдельно от атак)
+            if _G.SpamSkills and tick() - lastSkillTime >= 2.5 then
+                SpamSkills()
+            end
+        end)
+    end
+end)
+
+------------------------------------------------------------------------
 -- УМНЫЕ ФРУКТЫ И СУНДУКИ
 ------------------------------------------------------------------------
 local function TryPickFruit(fruit)
@@ -1719,7 +1758,6 @@ task.spawn(function()
                         if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character.Humanoid.Health <= 0 then break end
                         EquipWeapon()
                         ClickAttack()
-                        SpamSkills()
                         task.wait(_G.ClickInterval / 1000)
                     end
                     currentTarget = nil
@@ -1764,7 +1802,6 @@ task.spawn(function()
                         if dist > 1000 then break end
                         EquipWeapon()
                         ClickAttack()
-                        SpamSkills()
                         task.wait(_G.ClickInterval / 1000)
                     end
                     currentTarget = nil
@@ -1823,7 +1860,6 @@ task.spawn(function()
                         if checkNpc ~= npcName then break end
                         EquipWeapon()
                         ClickAttack()
-                        SpamSkills()
                         task.wait(_G.ClickInterval / 1000)
                     end
                     currentTarget = nil

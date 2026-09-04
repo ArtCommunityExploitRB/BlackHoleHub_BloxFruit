@@ -1,5 +1,5 @@
 -- [[ 🌌 BLACK HOLE HUB | ArtSquadFive | THE ULTIMATE PROGRESSION 🌌 ]]
--- Версия 3.7 – финальный полный код
+-- Версия 3.8 – добавлены конфиги, темы, улучшен сбор фруктов
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -58,6 +58,8 @@ local _G = {
     SeaEventHoverHeight = 85,
     FullBrightEnabled = false,
     GUIOpen = false,
+    CurrentTheme = "Orange",
+    Configs = {},
 }
 
 local WeaponsList = {}
@@ -289,388 +291,62 @@ elseif deviceType == "console" then
 end
 
 ------------------------------------------------------------------------
--- ИНТЕРФЕЙС
+-- ФУНКЦИЯ ТЕМ
 ------------------------------------------------------------------------
-local BlackHoleHub = Instance.new("ScreenGui")
-BlackHoleHub.Name = "BlackHoleHub"
-BlackHoleHub.Parent = CoreGui
-BlackHoleHub.ResetOnSpawn = false
-BlackHoleHub.IgnoreGuiInset = true
-BlackHoleHub.DisplayOrder = 999
+local Themes = {
+    Orange = {
+        Accent = Color3.fromRGB(255, 140, 0),
+        AccentText = Color3.fromRGB(0, 0, 0),
+        Background = Color3.fromRGB(15, 15, 15),
+        Sidebar = Color3.fromRGB(20, 20, 20),
+        Container = Color3.fromRGB(20, 20, 20),
+        Button = Color3.fromRGB(45, 45, 45),
+        Text = Color3.fromRGB(255, 255, 255),
+        StrokeColor = Color3.fromRGB(255, 140, 0),
+    },
+    Blue = {
+        Accent = Color3.fromRGB(0, 120, 255),
+        AccentText = Color3.fromRGB(255, 255, 255),
+        Background = Color3.fromRGB(10, 15, 25),
+        Sidebar = Color3.fromRGB(15, 20, 30),
+        Container = Color3.fromRGB(15, 20, 30),
+        Button = Color3.fromRGB(35, 45, 60),
+        Text = Color3.fromRGB(220, 230, 255),
+        StrokeColor = Color3.fromRGB(0, 120, 255),
+    },
+    Green = {
+        Accent = Color3.fromRGB(0, 200, 80),
+        AccentText = Color3.fromRGB(0, 0, 0),
+        Background = Color3.fromRGB(10, 20, 15),
+        Sidebar = Color3.fromRGB(15, 25, 20),
+        Container = Color3.fromRGB(15, 25, 20),
+        Button = Color3.fromRGB(30, 50, 40),
+        Text = Color3.fromRGB(230, 255, 240),
+        StrokeColor = Color3.fromRGB(0, 200, 80),
+    },
+    Red = {
+        Accent = Color3.fromRGB(255, 60, 60),
+        AccentText = Color3.fromRGB(0, 0, 0),
+        Background = Color3.fromRGB(25, 10, 10),
+        Sidebar = Color3.fromRGB(30, 15, 15),
+        Container = Color3.fromRGB(30, 15, 15),
+        Button = Color3.fromRGB(55, 30, 30),
+        Text = Color3.fromRGB(255, 220, 220),
+        StrokeColor = Color3.fromRGB(255, 60, 60),
+    },
+    Purple = {
+        Accent = Color3.fromRGB(160, 80, 255),
+        AccentText = Color3.fromRGB(255, 255, 255),
+        Background = Color3.fromRGB(20, 10, 30),
+        Sidebar = Color3.fromRGB(25, 15, 35),
+        Container = Color3.fromRGB(25, 15, 35),
+        Button = Color3.fromRGB(45, 30, 60),
+        Text = Color3.fromRGB(240, 220, 255),
+        StrokeColor = Color3.fromRGB(160, 80, 255),
+    }
+}
 
--- ИНТРО-АНИМАЦИЯ
-local IntroFrame = Instance.new("Frame", BlackHoleHub)
-IntroFrame.Size = UDim2.new(1, 0, 1, 0)
-IntroFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-IntroFrame.ZIndex = 500
-local IntroImage = Instance.new("ImageLabel", IntroFrame)
-IntroImage.Size = UDim2.new(1, 0, 1, 0)
-IntroImage.BackgroundTransparency = 1
-IntroImage.Image = "rbxassetid://89122563169047"
-IntroImage.ImageTransparency = 1
-IntroImage.ScaleType = Enum.ScaleType.Crop
-IntroImage.ZIndex = 501
-local IntroText = Instance.new("TextLabel", IntroFrame)
-IntroText.Size = UDim2.new(1, 0, 0, 100)
-IntroText.Position = UDim2.new(0, 0, 0.5, -50)
-IntroText.BackgroundTransparency = 1
-IntroText.Text = "BLACK HOLE HUB"
-IntroText.TextColor3 = Color3.fromRGB(255, 140, 0)
-IntroText.Font = Enum.Font.GothamBlack
-IntroText.TextSize = 60
-IntroText.TextTransparency = 1
-IntroText.ZIndex = 502
-local SubText = Instance.new("TextLabel", IntroFrame)
-SubText.Size = UDim2.new(1, 0, 0, 50)
-SubText.Position = UDim2.new(0, 0, 0.5, 40)
-SubText.BackgroundTransparency = 1
-SubText.Text = "by ArtSquadFive"
-SubText.TextColor3 = Color3.fromRGB(255, 255, 255)
-SubText.Font = Enum.Font.GothamBold
-SubText.TextSize = 25
-SubText.TextTransparency = 1
-SubText.ZIndex = 502
-TweenService:Create(IntroImage, TweenInfo.new(2, Enum.EasingStyle.Quad), {ImageTransparency = 0.4}):Play()
-task.wait(1)
-TweenService:Create(IntroText, TweenInfo.new(1.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
-TweenService:Create(SubText, TweenInfo.new(1.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
-task.wait(1.5)
-TweenService:Create(IntroText, TweenInfo.new(1), {TextTransparency = 1}):Play()
-TweenService:Create(SubText, TweenInfo.new(1), {TextTransparency = 1}):Play()
-TweenService:Create(IntroImage, TweenInfo.new(1.5), {ImageTransparency = 1}):Play()
-TweenService:Create(IntroFrame, TweenInfo.new(1.5), {BackgroundTransparency = 1}):Play()
-task.wait(1)
-IntroFrame:Destroy()
-
--- ОСНОВНОЙ ФРЕЙМ
-local Main = Instance.new("Frame", BlackHoleHub)
-Main.Name = "MainFrame"
-Main.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-Main.Size = UDim2.new(0, baseWidth, 0, baseHeight)
-Main.Position = UDim2.new(0.5, -baseWidth/2, 0.5, -baseHeight/2)
-Main.ClipsDescendants = true
-Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
-local MainStroke = Instance.new("UIStroke", Main)
-MainStroke.Thickness = 2
-local StrokeGradient = Instance.new("UIGradient", MainStroke)
-StrokeGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 140, 0)), ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 10))}
-StrokeGradient.Rotation = 45
-local BgImage = Instance.new("ImageLabel", Main)
-BgImage.Size = UDim2.new(1, 0, 1, 0)
-BgImage.BackgroundTransparency = 1
-BgImage.Image = "rbxassetid://89122563169047"
-BgImage.ImageTransparency = 0.85
-BgImage.ScaleType = Enum.ScaleType.Crop
-
--- TopBar
-local TopBar = Instance.new("Frame", Main)
-TopBar.BackgroundColor3 = Color3.fromRGB(20, 10, 5)
-TopBar.Size = UDim2.new(1, 0, 0, 40)
-TopBar.BackgroundTransparency = 0.5
-Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 10)
-local TitleLabel = Instance.new("TextLabel", TopBar)
-TitleLabel.Text = "BLACK HOLE HUB | ArtSquadFive"
-TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextColor3 = Color3.fromRGB(255, 140, 0)
-TitleLabel.TextSize = fontSizeLarge
-TitleLabel.Position = UDim2.new(0, 15, 0, 0)
-TitleLabel.Size = UDim2.new(0, 300, 1, 0)
-TitleLabel.BackgroundTransparency = 1
-TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
-
--- Кнопка сворачивания
-local CollapseBtn = Instance.new("TextButton", TopBar)
-CollapseBtn.Size = UDim2.new(0, 30, 0, 30)
-CollapseBtn.Position = UDim2.new(1, -40, 0.5, -15)
-CollapseBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
-CollapseBtn.Text = "−"
-CollapseBtn.TextColor3 = Color3.fromRGB(255,255,255)
-CollapseBtn.Font = Enum.Font.GothamBold
-CollapseBtn.TextSize = 20
-Instance.new("UICorner", CollapseBtn).CornerRadius = UDim.new(0, 6)
-CollapseBtn.ZIndex = 10
-
-local function CollapseToggle()
-    _G.Collapsed = not _G.Collapsed
-    if _G.Collapsed then
-        Main.Size = UDim2.new(0, baseWidth, 0, 40)
-        Sidebar.Visible = false
-        Container.Visible = false
-        CollapseBtn.Text = "+"
-    else
-        Main.Size = UDim2.new(0, baseWidth, 0, baseHeight)
-        Sidebar.Visible = true
-        Container.Visible = true
-        CollapseBtn.Text = "−"
-    end
-end
-CollapseBtn.MouseButton1Click:Connect(CollapseToggle)
-
--- Мобильная кнопка
-local MobileToggleBtn = Instance.new("ImageButton", BlackHoleHub)
-if isMobile then
-    MobileToggleBtn.Size = UDim2.new(0, 50, 0, 50)
-    MobileToggleBtn.Position = UDim2.new(0, 20, 0.5, -25)
-else
-    MobileToggleBtn.Visible = false
-end
-MobileToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-MobileToggleBtn.Image = "rbxassetid://89122563169047"
-Instance.new("UICorner", MobileToggleBtn).CornerRadius = UDim.new(1, 0)
-Instance.new("UIStroke", MobileToggleBtn).Color = Color3.fromRGB(255,255,255)
-MobileToggleBtn.MouseButton1Click:Connect(function()
-    if _G.Collapsed then CollapseToggle() end
-    Main.Visible = not Main.Visible
-    _G.GUIOpen = Main.Visible
-end)
-
--- Drag
-local dragToggle, dragStart, startPos
-TopBar.InputBegan:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-        dragToggle = true; dragStart = input.Position; startPos = Main.Position
-        for _, child in ipairs(BlackHoleHub:GetChildren()) do
-            if child.Name == "DropdownWindow" then child.Visible = false end
-        end
-    end
-end)
-UserInputService.InputChanged:Connect(function(input)
-    if dragToggle and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
-        local delta = input.Position - dragStart
-        Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
-    end
-end)
-UserInputService.InputEnded:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragToggle = false end
-end)
-
--- Sidebar
-local Sidebar = Instance.new("ScrollingFrame", Main)
-Sidebar.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Sidebar.BackgroundTransparency = 0.6
-Sidebar.Position = UDim2.new(0, 10, 0, 50)
-Sidebar.Size = UDim2.new(0, sidebarWidth, 1, -60)
-Sidebar.ScrollBarThickness = 2
-Sidebar.BorderSizePixel = 0
-Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
-local SidebarLayout = Instance.new("UIListLayout", Sidebar)
-SidebarLayout.Padding = UDim.new(0, 5)
-SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-
-local Container = Instance.new("Frame", Main)
-Container.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
-Container.BackgroundTransparency = 0.6
-Container.Position = UDim2.new(0, sidebarWidth + 20, 0, 50)
-Container.Size = UDim2.new(1, -(sidebarWidth + 30), 1, -60)
-Instance.new("UICorner", Container).CornerRadius = UDim.new(0, 8)
-
-local Tabs = {}
-local function CreateTab(name)
-    local TabBtn = Instance.new("TextButton", Sidebar)
-    TabBtn.Size = UDim2.new(0.9, 0, 0, 35)
-    TabBtn.BackgroundColor3 = Color3.fromRGB(30, 20, 10)
-    TabBtn.Text = name
-    TabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
-    TabBtn.Font = Enum.Font.GothamSemibold
-    TabBtn.TextSize = fontSizeMedium
-    Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
-    local Page = Instance.new("ScrollingFrame", Container)
-    Page.Size = UDim2.new(1, -10, 1, -10)
-    Page.Position = UDim2.new(0, 5, 0, 5)
-    Page.BackgroundTransparency = 1
-    Page.Visible = false
-    Page.ScrollBarThickness = 2
-    Page.BorderSizePixel = 0
-    local layout = Instance.new("UIListLayout", Page)
-    layout.Padding = UDim.new(0, 8)
-    layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        Page.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
-    end)
-    TabBtn.MouseButton1Click:Connect(function()
-        for _, tab in pairs(Tabs) do
-            tab.Page.Visible = false
-            TweenService:Create(tab.Btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 20, 10), TextColor3 = Color3.fromRGB(200, 200, 200)}):Play()
-        end
-        Page.Visible = true
-        TweenService:Create(TabBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 140, 0), TextColor3 = Color3.fromRGB(0, 0, 0)}):Play()
-        for _, child in ipairs(BlackHoleHub:GetChildren()) do
-            if child.Name == "DropdownWindow" then child.Visible = false end
-        end
-    end)
-    table.insert(Tabs, {Page = Page, Btn = TabBtn})
-    return Page
-end
-
-------------------------------------------------------------------------
--- КОНСТРУКТОРЫ ЭЛЕМЕНТОВ
-------------------------------------------------------------------------
-local function CreateToggle(parent, text, default, callback)
-    local Frame = Instance.new("Frame", parent)
-    Frame.Size = UDim2.new(1, 0, 0, 35)
-    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    Frame.BackgroundTransparency = 0.5
-    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
-    local Label = Instance.new("TextLabel", Frame)
-    Label.Size = UDim2.new(1, -50, 1, 0)
-    Label.Position = UDim2.new(0, 10, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Label.Font = Enum.Font.GothamSemibold
-    Label.TextSize = fontSizeMedium
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    local Check = Instance.new("TextButton", Frame)
-    Check.Size = UDim2.new(0, 25, 0, 25)
-    Check.Position = UDim2.new(1, -35, 0.5, -12.5)
-    Check.BackgroundColor3 = default and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(20, 20, 20)
-    Check.Text = ""
-    Instance.new("UICorner", Check).CornerRadius = UDim.new(0, 6)
-    local state = default
-    Check.MouseButton1Click:Connect(function()
-        state = not state
-        TweenService:Create(Check, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(20, 20, 20)}):Play()
-        pcall(callback, state)
-    end)
-end
-
-local function CreateSlider(parent, text, min, max, default, callback)
-    local Frame = Instance.new("Frame", parent)
-    Frame.Size = UDim2.new(1, 0, 0, 50)
-    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    Frame.BackgroundTransparency = 0.5
-    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
-    local Label = Instance.new("TextLabel", Frame)
-    Label.Size = UDim2.new(1, -20, 0, 25)
-    Label.Position = UDim2.new(0, 10, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text .. ": " .. tostring(default)
-    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Label.Font = Enum.Font.GothamSemibold
-    Label.TextSize = fontSizeMedium
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    local Bg = Instance.new("Frame", Frame)
-    Bg.Size = UDim2.new(1, -20, 0, 6)
-    Bg.Position = UDim2.new(0, 10, 0, 30)
-    Bg.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
-    Instance.new("UICorner", Bg).CornerRadius = UDim.new(1, 0)
-    local Fill = Instance.new("Frame", Bg)
-    Fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-    Fill.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-    Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
-    local Btn = Instance.new("TextButton", Bg)
-    Btn.Size = UDim2.new(1, 0, 1, 0)
-    Btn.BackgroundTransparency = 1
-    Btn.Text = ""
-    local dragging = false
-    local function update(input)
-        local pos = math.clamp((input.Position.X - Bg.AbsolutePosition.X) / Bg.AbsoluteSize.X, 0, 1)
-        local val = math.floor(min + ((max - min) * pos))
-        Fill.Size = UDim2.new(pos, 0, 1, 0)
-        Label.Text = text .. ": " .. tostring(val)
-        pcall(callback, val)
-    end
-    Btn.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true; update(input)
-        end
-    end)
-    UserInputService.InputEnded:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
-    end)
-    UserInputService.InputChanged:Connect(function(input)
-        if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then update(input) end
-    end)
-end
-
-local function CreateDropdown(parent, text, list_func, callback)
-    local Frame = Instance.new("Frame", parent)
-    Frame.Size = UDim2.new(1, 0, 0, 45)
-    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    Frame.BackgroundTransparency = 0.5
-    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
-    local Label = Instance.new("TextLabel", Frame)
-    Label.Size = UDim2.new(1, -160, 1, 0)
-    Label.Position = UDim2.new(0, 10, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(230, 230, 230)
-    Label.Font = Enum.Font.GothamSemibold
-    Label.TextSize = fontSizeMedium
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    local DropBtn = Instance.new("TextButton", Frame)
-    DropBtn.Size = UDim2.new(0, 140, 0, 30)
-    DropBtn.Position = UDim2.new(1, -150, 0.5, -15)
-    DropBtn.Text = "Выбрать..."
-    DropBtn.Font = Enum.Font.GothamBold
-    DropBtn.TextSize = fontSizeMedium
-    DropBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    DropBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-    Instance.new("UICorner", DropBtn).CornerRadius = UDim.new(0, 6)
-    local DropList = Instance.new("ScrollingFrame")
-    DropList.Name = "DropdownWindow"
-    DropList.Size = UDim2.new(0, 140, 0, 120)
-    DropList.Visible = false
-    DropList.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    DropList.BorderSizePixel = 0
-    DropList.ZIndex = 300
-    DropList.ScrollBarThickness = 4
-    Instance.new("UICorner", DropList).CornerRadius = UDim.new(0, 6)
-    local stroke = Instance.new("UIStroke", DropList)
-    stroke.Color = Color3.fromRGB(255, 140, 0)
-    stroke.Thickness = 1
-    local listLayout = Instance.new("UIListLayout", DropList)
-    listLayout.Padding = UDim.new(0, 2)
-    listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-        DropList.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 5)
-    end)
-    DropList.Parent = BlackHoleHub
-    DropBtn.MouseButton1Click:Connect(function()
-        for _, child in ipairs(BlackHoleHub:GetChildren()) do
-            if child:IsA("ScrollingFrame") and child.Name == "DropdownWindow" and child ~= DropList then
-                child.Visible = false
-            end
-        end
-        DropList.Visible = not DropList.Visible
-        if DropList.Visible then
-            DropList.Position = UDim2.new(0, DropBtn.AbsolutePosition.X, 0, DropBtn.AbsolutePosition.Y + DropBtn.AbsoluteSize.Y + 4)
-            for _, child in ipairs(DropList:GetChildren()) do 
-                if child:IsA("TextButton") then child:Destroy() end 
-            end
-            local current_list = type(list_func) == "function" and list_func() or list_func
-            for _, v in ipairs(current_list) do
-                local btn = Instance.new("TextButton")
-                btn.Size = UDim2.new(1, 0, 0, 30)
-                btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-                btn.Text = tostring(v)
-                btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-                btn.Font = Enum.Font.GothamBold
-                btn.TextSize = fontSizeMedium
-                btn.ZIndex = 310
-                Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-                btn.MouseButton1Click:Connect(function()
-                    DropBtn.Text = tostring(v)
-                    DropList.Visible = false
-                    pcall(callback, v)
-                end)
-                btn.Parent = DropList
-            end
-        end
-    end)
-end
-
-local function CreateButton(parent, text, callback)
-    local Btn = Instance.new("TextButton", parent)
-    Btn.Size = UDim2.new(1, 0, 0, 35)
-    Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-    Btn.Text = text
-    Btn.TextColor3 = Color3.fromRGB(0, 0, 0)
-    Btn.Font = Enum.Font.GothamBold
-    Btn.TextSize = fontSizeMedium
-    Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
-    Btn.MouseButton1Click:Connect(function()
-        pcall(callback)
-    end)
-end
+local CurrentTheme = Themes[_G.CurrentTheme] or Themes.Orange
 
 ------------------------------------------------------------------------
 -- ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
@@ -940,418 +616,1027 @@ local function GetQuestData()
 end
 
 ------------------------------------------------------------------------
--- СОЗДАНИЕ ВКЛАДОК
+-- ФУНКЦИЯ ПОСТРОЕНИЯ GUI
 ------------------------------------------------------------------------
-local FarmTab = CreateTab("⚔️ Фарм")
-local WorldTab = CreateTab("🌍 Мир")
-local BossTab = CreateTab("👑 Рейд боссов")
-local TeleportTab = CreateTab("🚀 Телепорт")
-local SettingsTab = CreateTab("⚙️ Настройки")
+local function BuildGUI()
+    if CoreGui:FindFirstChild("BlackHoleHub") then CoreGui.BlackHoleHub:Destroy() end
 
--- ФАРМ
-CreateToggle(FarmTab, "Включить Автофарм (с квестом)", _G.AutoFarmLevel, function(s) 
-    _G.AutoFarmLevel = s
-    _G.CurrentRunningNPC = nil
-    currentTarget = nil
-end)
-CreateToggle(FarmTab, "Бить врагов в радиусе 1000", _G.KillAuraRadius, function(s) 
-    _G.KillAuraRadius = s
-    if not s then currentTarget = nil end
-end)
-CreateToggle(FarmTab, "Авто-Спам Скиллов", _G.SpamSkills, function(s) _G.SpamSkills = s end)
-CreateToggle(FarmTab, "Авто-Хаки (Вооружение)", _G.AutoHaki, function(s) _G.AutoHaki = s end)
-CreateToggle(FarmTab, "Авто-Инстинкт (Наблюдение)", _G.AutoInstinct, function(s) _G.AutoInstinct = s end)
-CreateSlider(FarmTab, "Дистанция атаки", 6, 50, _G.FarmDistance, function(v) _G.FarmDistance = v end)
-CreateDropdown(FarmTab, "Выбор стороны атаки", {"Сверху", "Снизу", "Со спины"}, function(v) _G.AttackSide = v end)
-CreateDropdown(FarmTab, "Выбери Оружие", GetWeapons, function(v) _G.SelectedWeapon = v end)
+    CurrentTheme = Themes[_G.CurrentTheme] or Themes.Orange
 
--- МИР
-CreateToggle(WorldTab, "Авто-Подбор Фруктов", _G.AutoFruitFinder, function(s) _G.AutoFruitFinder = s end)
-CreateToggle(WorldTab, "Магнит Сундуков (Умный)", _G.AutoChestSteal, function(s) _G.AutoChestSteal = s end)
+    local BlackHoleHub = Instance.new("ScreenGui")
+    BlackHoleHub.Name = "BlackHoleHub"
+    BlackHoleHub.Parent = CoreGui
+    BlackHoleHub.ResetOnSpawn = false
+    BlackHoleHub.IgnoreGuiInset = true
+    BlackHoleHub.DisplayOrder = 999
 
--- РЕЙД БОССОВ
-local BossFrame = Instance.new("Frame", BossTab)
-BossFrame.Size = UDim2.new(1, 0, 0, 260)
-BossFrame.BackgroundTransparency = 1
+    -- ИНТРО-АНИМАЦИЯ
+    local IntroFrame = Instance.new("Frame", BlackHoleHub)
+    IntroFrame.Size = UDim2.new(1, 0, 1, 0)
+    IntroFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    IntroFrame.ZIndex = 500
+    local IntroImage = Instance.new("ImageLabel", IntroFrame)
+    IntroImage.Size = UDim2.new(1, 0, 1, 0)
+    IntroImage.BackgroundTransparency = 1
+    IntroImage.Image = "rbxassetid://89122563169047"
+    IntroImage.ImageTransparency = 1
+    IntroImage.ScaleType = Enum.ScaleType.Crop
+    IntroImage.ZIndex = 501
+    local IntroText = Instance.new("TextLabel", IntroFrame)
+    IntroText.Size = UDim2.new(1, 0, 0, 100)
+    IntroText.Position = UDim2.new(0, 0, 0.5, -50)
+    IntroText.BackgroundTransparency = 1
+    IntroText.Text = "BLACK HOLE HUB"
+    IntroText.TextColor3 = CurrentTheme.Accent
+    IntroText.Font = Enum.Font.GothamBlack
+    IntroText.TextSize = 60
+    IntroText.TextTransparency = 1
+    IntroText.ZIndex = 502
+    local SubText = Instance.new("TextLabel", IntroFrame)
+    SubText.Size = UDim2.new(1, 0, 0, 50)
+    SubText.Position = UDim2.new(0, 0, 0.5, 40)
+    SubText.BackgroundTransparency = 1
+    SubText.Text = "by ArtSquadFive"
+    SubText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    SubText.Font = Enum.Font.GothamBold
+    SubText.TextSize = 25
+    SubText.TextTransparency = 1
+    SubText.ZIndex = 502
+    TweenService:Create(IntroImage, TweenInfo.new(2, Enum.EasingStyle.Quad), {ImageTransparency = 0.4}):Play()
+    task.wait(1)
+    TweenService:Create(IntroText, TweenInfo.new(1.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+    TweenService:Create(SubText, TweenInfo.new(1.5, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {TextTransparency = 0}):Play()
+    task.wait(1.5)
+    TweenService:Create(IntroText, TweenInfo.new(1), {TextTransparency = 1}):Play()
+    TweenService:Create(SubText, TweenInfo.new(1), {TextTransparency = 1}):Play()
+    TweenService:Create(IntroImage, TweenInfo.new(1.5), {ImageTransparency = 1}):Play()
+    TweenService:Create(IntroFrame, TweenInfo.new(1.5), {BackgroundTransparency = 1}):Play()
+    task.wait(1)
+    IntroFrame:Destroy()
 
-local StatusLabel = Instance.new("TextLabel", BossFrame)
-StatusLabel.Size = UDim2.new(1, 0, 0, 30)
-StatusLabel.Position = UDim2.new(0, 0, 0, 0)
-StatusLabel.BackgroundTransparency = 1
-StatusLabel.Text = "Сканирование живых боссов..."
-StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
-StatusLabel.Font = Enum.Font.GothamSemibold
-StatusLabel.TextSize = fontSizeMedium
-StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+    -- ОСНОВНОЙ ФРЕЙМ
+    local Main = Instance.new("Frame", BlackHoleHub)
+    Main.Name = "MainFrame"
+    Main.BackgroundColor3 = CurrentTheme.Background
+    Main.Size = UDim2.new(0, baseWidth, 0, baseHeight)
+    Main.Position = UDim2.new(0.5, -baseWidth/2, 0.5, -baseHeight/2)
+    Main.ClipsDescendants = true
+    Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
+    local MainStroke = Instance.new("UIStroke", Main)
+    MainStroke.Thickness = 2
+    local StrokeGradient = Instance.new("UIGradient", MainStroke)
+    StrokeGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, CurrentTheme.StrokeColor), ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 10))}
+    StrokeGradient.Rotation = 45
+    local BgImage = Instance.new("ImageLabel", Main)
+    BgImage.Size = UDim2.new(1, 0, 1, 0)
+    BgImage.BackgroundTransparency = 1
+    BgImage.Image = "rbxassetid://89122563169047"
+    BgImage.ImageTransparency = 0.85
+    BgImage.ScaleType = Enum.ScaleType.Crop
 
-local DropFrame = Instance.new("Frame", BossFrame)
-DropFrame.Size = UDim2.new(1, 0, 0, 45)
-DropFrame.Position = UDim2.new(0, 0, 0, 35)
-DropFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-DropFrame.BackgroundTransparency = 0.5
-Instance.new("UICorner", DropFrame).CornerRadius = UDim.new(0, 6)
+    -- TopBar
+    local TopBar = Instance.new("Frame", Main)
+    TopBar.BackgroundColor3 = Color3.fromRGB(20, 10, 5)
+    TopBar.Size = UDim2.new(1, 0, 0, 40)
+    TopBar.BackgroundTransparency = 0.5
+    Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 10)
+    local TitleLabel = Instance.new("TextLabel", TopBar)
+    TitleLabel.Text = "BLACK HOLE HUB | ArtSquadFive"
+    TitleLabel.Font = Enum.Font.GothamBold
+    TitleLabel.TextColor3 = CurrentTheme.Accent
+    TitleLabel.TextSize = fontSizeLarge
+    TitleLabel.Position = UDim2.new(0, 15, 0, 0)
+    TitleLabel.Size = UDim2.new(0, 300, 1, 0)
+    TitleLabel.BackgroundTransparency = 1
+    TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-local DropLabel = Instance.new("TextLabel", DropFrame)
-DropLabel.Size = UDim2.new(1, -160, 1, 0)
-DropLabel.Position = UDim2.new(0, 10, 0, 0)
-DropLabel.BackgroundTransparency = 1
-DropLabel.Text = "Живые боссы"
-DropLabel.TextColor3 = Color3.fromRGB(230, 230, 230)
-DropLabel.Font = Enum.Font.GothamSemibold
-DropLabel.TextSize = fontSizeMedium
-DropLabel.TextXAlignment = Enum.TextXAlignment.Left
+    -- Кнопка сворачивания
+    local CollapseBtn = Instance.new("TextButton", TopBar)
+    CollapseBtn.Size = UDim2.new(0, 30, 0, 30)
+    CollapseBtn.Position = UDim2.new(1, -40, 0.5, -15)
+    CollapseBtn.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+    CollapseBtn.Text = "−"
+    CollapseBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    CollapseBtn.Font = Enum.Font.GothamBold
+    CollapseBtn.TextSize = 20
+    Instance.new("UICorner", CollapseBtn).CornerRadius = UDim.new(0, 6)
+    CollapseBtn.ZIndex = 10
 
-local DropBtn = Instance.new("TextButton", DropFrame)
-DropBtn.Size = UDim2.new(0, 140, 0, 30)
-DropBtn.Position = UDim2.new(1, -150, 0.5, -15)
-DropBtn.Text = "Нет боссов"
-DropBtn.Font = Enum.Font.GothamBold
-DropBtn.TextSize = fontSizeMedium
-DropBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-DropBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-Instance.new("UICorner", DropBtn).CornerRadius = UDim.new(0, 6)
-
-local DropList = Instance.new("ScrollingFrame")
-DropList.Name = "DropdownWindow"
-DropList.Size = UDim2.new(0, 140, 0, 120)
-DropList.Visible = false
-DropList.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-DropList.BorderSizePixel = 0
-DropList.ZIndex = 300
-DropList.ScrollBarThickness = 4
-Instance.new("UICorner", DropList).CornerRadius = UDim.new(0, 6)
-local stroke2 = Instance.new("UIStroke", DropList)
-stroke2.Color = Color3.fromRGB(255, 140, 0)
-stroke2.Thickness = 1
-local listLayout2 = Instance.new("UIListLayout", DropList)
-listLayout2.Padding = UDim.new(0, 2)
-listLayout2:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    DropList.CanvasSize = UDim2.new(0, 0, 0, listLayout2.AbsoluteContentSize.Y + 5)
-end)
-DropList.Parent = BlackHoleHub
-
-local function RefreshBossDropdown()
-    local aliveBosses = GetAliveBosses()
-    for _, child in ipairs(DropList:GetChildren()) do 
-        if child:IsA("TextButton") then child:Destroy() end 
+    local function CollapseToggle()
+        _G.Collapsed = not _G.Collapsed
+        if _G.Collapsed then
+            Main.Size = UDim2.new(0, baseWidth, 0, 40)
+            Sidebar.Visible = false
+            Container.Visible = false
+            CollapseBtn.Text = "+"
+        else
+            Main.Size = UDim2.new(0, baseWidth, 0, baseHeight)
+            Sidebar.Visible = true
+            Container.Visible = true
+            CollapseBtn.Text = "−"
+        end
     end
-    if #aliveBosses == 0 then
-        local btn = Instance.new("TextButton")
-        btn.Size = UDim2.new(1, 0, 0, 30)
-        btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-        btn.Text = "Нет живых боссов"
-        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        btn.Font = Enum.Font.GothamBold
-        btn.TextSize = fontSizeMedium
-        btn.ZIndex = 310
-        Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
-        btn.MouseButton1Click:Connect(function()
-            DropList.Visible = false
-        end)
-        btn.Parent = DropList
-        DropBtn.Text = "Нет боссов"
-        StatusLabel.Text = "Нет живых боссов"
+    CollapseBtn.MouseButton1Click:Connect(CollapseToggle)
+
+    -- Мобильная кнопка
+    local MobileToggleBtn = Instance.new("ImageButton", BlackHoleHub)
+    if isMobile then
+        MobileToggleBtn.Size = UDim2.new(0, 50, 0, 50)
+        MobileToggleBtn.Position = UDim2.new(0, 20, 0.5, -25)
     else
-        for _, name in ipairs(aliveBosses) do
+        MobileToggleBtn.Visible = false
+    end
+    MobileToggleBtn.BackgroundColor3 = CurrentTheme.Accent
+    MobileToggleBtn.Image = "rbxassetid://89122563169047"
+    Instance.new("UICorner", MobileToggleBtn).CornerRadius = UDim.new(1, 0)
+    Instance.new("UIStroke", MobileToggleBtn).Color = Color3.fromRGB(255,255,255)
+    MobileToggleBtn.MouseButton1Click:Connect(function()
+        if _G.Collapsed then CollapseToggle() end
+        Main.Visible = not Main.Visible
+        _G.GUIOpen = Main.Visible
+    end)
+
+    -- Drag
+    local dragToggle, dragStart, startPos
+    TopBar.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragToggle = true; dragStart = input.Position; startPos = Main.Position
+            for _, child in ipairs(BlackHoleHub:GetChildren()) do
+                if child.Name == "DropdownWindow" then child.Visible = false end
+            end
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragToggle and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local delta = input.Position - dragStart
+            Main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+        end
+    end)
+    UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragToggle = false end
+    end)
+
+    -- Sidebar
+    local Sidebar = Instance.new("ScrollingFrame", Main)
+    Sidebar.BackgroundColor3 = CurrentTheme.Sidebar
+    Sidebar.BackgroundTransparency = 0.6
+    Sidebar.Position = UDim2.new(0, 10, 0, 50)
+    Sidebar.Size = UDim2.new(0, sidebarWidth, 1, -60)
+    Sidebar.ScrollBarThickness = 2
+    Sidebar.BorderSizePixel = 0
+    Instance.new("UICorner", Sidebar).CornerRadius = UDim.new(0, 8)
+    local SidebarLayout = Instance.new("UIListLayout", Sidebar)
+    SidebarLayout.Padding = UDim.new(0, 5)
+    SidebarLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    local Container = Instance.new("Frame", Main)
+    Container.BackgroundColor3 = CurrentTheme.Container
+    Container.BackgroundTransparency = 0.6
+    Container.Position = UDim2.new(0, sidebarWidth + 20, 0, 50)
+    Container.Size = UDim2.new(1, -(sidebarWidth + 30), 1, -60)
+    Instance.new("UICorner", Container).CornerRadius = UDim.new(0, 8)
+
+    local Tabs = {}
+    local function CreateTab(name)
+        local TabBtn = Instance.new("TextButton", Sidebar)
+        TabBtn.Size = UDim2.new(0.9, 0, 0, 35)
+        TabBtn.BackgroundColor3 = Color3.fromRGB(30, 20, 10)
+        TabBtn.Text = name
+        TabBtn.TextColor3 = Color3.fromRGB(200, 200, 200)
+        TabBtn.Font = Enum.Font.GothamSemibold
+        TabBtn.TextSize = fontSizeMedium
+        Instance.new("UICorner", TabBtn).CornerRadius = UDim.new(0, 6)
+        local Page = Instance.new("ScrollingFrame", Container)
+        Page.Size = UDim2.new(1, -10, 1, -10)
+        Page.Position = UDim2.new(0, 5, 0, 5)
+        Page.BackgroundTransparency = 1
+        Page.Visible = false
+        Page.ScrollBarThickness = 2
+        Page.BorderSizePixel = 0
+        local layout = Instance.new("UIListLayout", Page)
+        layout.Padding = UDim.new(0, 8)
+        layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            Page.CanvasSize = UDim2.new(0, 0, 0, layout.AbsoluteContentSize.Y + 10)
+        end)
+        TabBtn.MouseButton1Click:Connect(function()
+            for _, tab in pairs(Tabs) do
+                tab.Page.Visible = false
+                TweenService:Create(tab.Btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 20, 10), TextColor3 = Color3.fromRGB(200, 200, 200)}):Play()
+            end
+            Page.Visible = true
+            TweenService:Create(TabBtn, TweenInfo.new(0.2), {BackgroundColor3 = CurrentTheme.Accent, TextColor3 = CurrentTheme.AccentText}):Play()
+            for _, child in ipairs(BlackHoleHub:GetChildren()) do
+                if child.Name == "DropdownWindow" then child.Visible = false end
+            end
+        end)
+        table.insert(Tabs, {Page = Page, Btn = TabBtn})
+        return Page
+    end
+
+    -- Конструкторы элементов с темой
+    local function CreateToggle(parent, text, default, callback)
+        local Frame = Instance.new("Frame", parent)
+        Frame.Size = UDim2.new(1, 0, 0, 35)
+        Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        Frame.BackgroundTransparency = 0.5
+        Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
+        local Label = Instance.new("TextLabel", Frame)
+        Label.Size = UDim2.new(1, -50, 1, 0)
+        Label.Position = UDim2.new(0, 10, 0, 0)
+        Label.BackgroundTransparency = 1
+        Label.Text = text
+        Label.TextColor3 = CurrentTheme.Text
+        Label.Font = Enum.Font.GothamSemibold
+        Label.TextSize = fontSizeMedium
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+        local Check = Instance.new("TextButton", Frame)
+        Check.Size = UDim2.new(0, 25, 0, 25)
+        Check.Position = UDim2.new(1, -35, 0.5, -12.5)
+        Check.BackgroundColor3 = default and CurrentTheme.Accent or Color3.fromRGB(20, 20, 20)
+        Check.Text = ""
+        Instance.new("UICorner", Check).CornerRadius = UDim.new(0, 6)
+        local state = default
+        Check.MouseButton1Click:Connect(function()
+            state = not state
+            TweenService:Create(Check, TweenInfo.new(0.2), {BackgroundColor3 = state and CurrentTheme.Accent or Color3.fromRGB(20, 20, 20)}):Play()
+            pcall(callback, state)
+        end)
+    end
+
+    local function CreateSlider(parent, text, min, max, default, callback)
+        local Frame = Instance.new("Frame", parent)
+        Frame.Size = UDim2.new(1, 0, 0, 50)
+        Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        Frame.BackgroundTransparency = 0.5
+        Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
+        local Label = Instance.new("TextLabel", Frame)
+        Label.Size = UDim2.new(1, -20, 0, 25)
+        Label.Position = UDim2.new(0, 10, 0, 0)
+        Label.BackgroundTransparency = 1
+        Label.Text = text .. ": " .. tostring(default)
+        Label.TextColor3 = CurrentTheme.Text
+        Label.Font = Enum.Font.GothamSemibold
+        Label.TextSize = fontSizeMedium
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+        local Bg = Instance.new("Frame", Frame)
+        Bg.Size = UDim2.new(1, -20, 0, 6)
+        Bg.Position = UDim2.new(0, 10, 0, 30)
+        Bg.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+        Instance.new("UICorner", Bg).CornerRadius = UDim.new(1, 0)
+        local Fill = Instance.new("Frame", Bg)
+        Fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+        Fill.BackgroundColor3 = CurrentTheme.Accent
+        Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
+        local Btn = Instance.new("TextButton", Bg)
+        Btn.Size = UDim2.new(1, 0, 1, 0)
+        Btn.BackgroundTransparency = 1
+        Btn.Text = ""
+        local dragging = false
+        local function update(input)
+            local pos = math.clamp((input.Position.X - Bg.AbsolutePosition.X) / Bg.AbsoluteSize.X, 0, 1)
+            local val = math.floor(min + ((max - min) * pos))
+            Fill.Size = UDim2.new(pos, 0, 1, 0)
+            Label.Text = text .. ": " .. tostring(val)
+            pcall(callback, val)
+        end
+        Btn.InputBegan:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+                dragging = true; update(input)
+            end
+        end)
+        UserInputService.InputEnded:Connect(function(input)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then dragging = false end
+        end)
+        UserInputService.InputChanged:Connect(function(input)
+            if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then update(input) end
+        end)
+    end
+
+    local function CreateDropdown(parent, text, list_func, callback)
+        local Frame = Instance.new("Frame", parent)
+        Frame.Size = UDim2.new(1, 0, 0, 45)
+        Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        Frame.BackgroundTransparency = 0.5
+        Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
+        local Label = Instance.new("TextLabel", Frame)
+        Label.Size = UDim2.new(1, -160, 1, 0)
+        Label.Position = UDim2.new(0, 10, 0, 0)
+        Label.BackgroundTransparency = 1
+        Label.Text = text
+        Label.TextColor3 = CurrentTheme.Text
+        Label.Font = Enum.Font.GothamSemibold
+        Label.TextSize = fontSizeMedium
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+        local DropBtn = Instance.new("TextButton", Frame)
+        DropBtn.Size = UDim2.new(0, 140, 0, 30)
+        DropBtn.Position = UDim2.new(1, -150, 0.5, -15)
+        DropBtn.Text = "Выбрать..."
+        DropBtn.Font = Enum.Font.GothamBold
+        DropBtn.TextSize = fontSizeMedium
+        DropBtn.TextColor3 = CurrentTheme.Text
+        DropBtn.BackgroundColor3 = CurrentTheme.Button
+        Instance.new("UICorner", DropBtn).CornerRadius = UDim.new(0, 6)
+        local DropList = Instance.new("ScrollingFrame")
+        DropList.Name = "DropdownWindow"
+        DropList.Size = UDim2.new(0, 140, 0, 120)
+        DropList.Visible = false
+        DropList.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+        DropList.BorderSizePixel = 0
+        DropList.ZIndex = 300
+        DropList.ScrollBarThickness = 4
+        Instance.new("UICorner", DropList).CornerRadius = UDim.new(0, 6)
+        local stroke = Instance.new("UIStroke", DropList)
+        stroke.Color = CurrentTheme.Accent
+        stroke.Thickness = 1
+        local listLayout = Instance.new("UIListLayout", DropList)
+        listLayout.Padding = UDim.new(0, 2)
+        listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+            DropList.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 5)
+        end)
+        DropList.Parent = BlackHoleHub
+        DropBtn.MouseButton1Click:Connect(function()
+            for _, child in ipairs(BlackHoleHub:GetChildren()) do
+                if child:IsA("ScrollingFrame") and child.Name == "DropdownWindow" and child ~= DropList then
+                    child.Visible = false
+                end
+            end
+            DropList.Visible = not DropList.Visible
+            if DropList.Visible then
+                DropList.Position = UDim2.new(0, DropBtn.AbsolutePosition.X, 0, DropBtn.AbsolutePosition.Y + DropBtn.AbsoluteSize.Y + 4)
+                for _, child in ipairs(DropList:GetChildren()) do 
+                    if child:IsA("TextButton") then child:Destroy() end 
+                end
+                local current_list = type(list_func) == "function" and list_func() or list_func
+                for _, v in ipairs(current_list) do
+                    local btn = Instance.new("TextButton")
+                    btn.Size = UDim2.new(1, 0, 0, 30)
+                    btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+                    btn.Text = tostring(v)
+                    btn.TextColor3 = CurrentTheme.Text
+                    btn.Font = Enum.Font.GothamBold
+                    btn.TextSize = fontSizeMedium
+                    btn.ZIndex = 310
+                    Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+                    btn.MouseButton1Click:Connect(function()
+                        DropBtn.Text = tostring(v)
+                        DropList.Visible = false
+                        pcall(callback, v)
+                    end)
+                    btn.Parent = DropList
+                end
+            end
+        end)
+    end
+
+    local function CreateButton(parent, text, callback)
+        local Btn = Instance.new("TextButton", parent)
+        Btn.Size = UDim2.new(1, 0, 0, 35)
+        Btn.BackgroundColor3 = CurrentTheme.Accent
+        Btn.Text = text
+        Btn.TextColor3 = CurrentTheme.AccentText
+        Btn.Font = Enum.Font.GothamBold
+        Btn.TextSize = fontSizeMedium
+        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 6)
+        Btn.MouseButton1Click:Connect(function()
+            pcall(callback)
+        end)
+    end
+
+    -- Создание вкладок
+    local FarmTab = CreateTab("⚔️ Фарм")
+    local WorldTab = CreateTab("🌍 Мир")
+    local BossTab = CreateTab("👑 Рейд боссов")
+    local TeleportTab = CreateTab("🚀 Телепорт")
+    local SettingsTab = CreateTab("⚙️ Настройки")
+    local ConfigTab = CreateTab("💾 Конфиги")
+
+    -- ====== ФАРМ ======
+    CreateToggle(FarmTab, "Включить Автофарм (с квестом)", _G.AutoFarmLevel, function(s) 
+        _G.AutoFarmLevel = s
+        _G.CurrentRunningNPC = nil
+        currentTarget = nil
+    end)
+    CreateToggle(FarmTab, "Бить врагов в радиусе 1000", _G.KillAuraRadius, function(s) 
+        _G.KillAuraRadius = s
+        if not s then currentTarget = nil end
+    end)
+    CreateToggle(FarmTab, "Авто-Спам Скиллов", _G.SpamSkills, function(s) _G.SpamSkills = s end)
+    CreateToggle(FarmTab, "Авто-Хаки (Вооружение)", _G.AutoHaki, function(s) _G.AutoHaki = s end)
+    CreateToggle(FarmTab, "Авто-Инстинкт (Наблюдение)", _G.AutoInstinct, function(s) _G.AutoInstinct = s end)
+    CreateSlider(FarmTab, "Дистанция атаки", 6, 50, _G.FarmDistance, function(v) _G.FarmDistance = v end)
+    CreateDropdown(FarmTab, "Выбор стороны атаки", {"Сверху", "Снизу", "Со спины"}, function(v) _G.AttackSide = v end)
+    CreateDropdown(FarmTab, "Выбери Оружие", GetWeapons, function(v) _G.SelectedWeapon = v end)
+
+    -- ====== МИР ======
+    CreateToggle(WorldTab, "Авто-Подбор Фруктов", _G.AutoFruitFinder, function(s) _G.AutoFruitFinder = s end)
+    CreateToggle(WorldTab, "Магнит Сундуков (Умный)", _G.AutoChestSteal, function(s) _G.AutoChestSteal = s end)
+
+    -- ====== РЕЙД БОССОВ ======
+    local BossFrame = Instance.new("Frame", BossTab)
+    BossFrame.Size = UDim2.new(1, 0, 0, 260)
+    BossFrame.BackgroundTransparency = 1
+
+    local StatusLabel = Instance.new("TextLabel", BossFrame)
+    StatusLabel.Size = UDim2.new(1, 0, 0, 30)
+    StatusLabel.Position = UDim2.new(0, 0, 0, 0)
+    StatusLabel.BackgroundTransparency = 1
+    StatusLabel.Text = "Сканирование живых боссов..."
+    StatusLabel.TextColor3 = CurrentTheme.Text
+    StatusLabel.Font = Enum.Font.GothamSemibold
+    StatusLabel.TextSize = fontSizeMedium
+    StatusLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    local DropFrame = Instance.new("Frame", BossFrame)
+    DropFrame.Size = UDim2.new(1, 0, 0, 45)
+    DropFrame.Position = UDim2.new(0, 0, 0, 35)
+    DropFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    DropFrame.BackgroundTransparency = 0.5
+    Instance.new("UICorner", DropFrame).CornerRadius = UDim.new(0, 6)
+
+    local DropLabel = Instance.new("TextLabel", DropFrame)
+    DropLabel.Size = UDim2.new(1, -160, 1, 0)
+    DropLabel.Position = UDim2.new(0, 10, 0, 0)
+    DropLabel.BackgroundTransparency = 1
+    DropLabel.Text = "Живые боссы"
+    DropLabel.TextColor3 = CurrentTheme.Text
+    DropLabel.Font = Enum.Font.GothamSemibold
+    DropLabel.TextSize = fontSizeMedium
+    DropLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    local DropBtn = Instance.new("TextButton", DropFrame)
+    DropBtn.Size = UDim2.new(0, 140, 0, 30)
+    DropBtn.Position = UDim2.new(1, -150, 0.5, -15)
+    DropBtn.Text = "Нет боссов"
+    DropBtn.Font = Enum.Font.GothamBold
+    DropBtn.TextSize = fontSizeMedium
+    DropBtn.TextColor3 = CurrentTheme.Text
+    DropBtn.BackgroundColor3 = CurrentTheme.Button
+    Instance.new("UICorner", DropBtn).CornerRadius = UDim.new(0, 6)
+
+    local DropList = Instance.new("ScrollingFrame")
+    DropList.Name = "DropdownWindow"
+    DropList.Size = UDim2.new(0, 140, 0, 120)
+    DropList.Visible = false
+    DropList.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    DropList.BorderSizePixel = 0
+    DropList.ZIndex = 300
+    DropList.ScrollBarThickness = 4
+    Instance.new("UICorner", DropList).CornerRadius = UDim.new(0, 6)
+    local stroke2 = Instance.new("UIStroke", DropList)
+    stroke2.Color = CurrentTheme.Accent
+    stroke2.Thickness = 1
+    local listLayout2 = Instance.new("UIListLayout", DropList)
+    listLayout2.Padding = UDim.new(0, 2)
+    listLayout2:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+        DropList.CanvasSize = UDim2.new(0, 0, 0, listLayout2.AbsoluteContentSize.Y + 5)
+    end)
+    DropList.Parent = BlackHoleHub
+
+    local function RefreshBossDropdown()
+        local aliveBosses = GetAliveBosses()
+        for _, child in ipairs(DropList:GetChildren()) do 
+            if child:IsA("TextButton") then child:Destroy() end 
+        end
+        if #aliveBosses == 0 then
             local btn = Instance.new("TextButton")
             btn.Size = UDim2.new(1, 0, 0, 30)
             btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-            btn.Text = name
-            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.Text = "Нет живых боссов"
+            btn.TextColor3 = CurrentTheme.Text
             btn.Font = Enum.Font.GothamBold
             btn.TextSize = fontSizeMedium
             btn.ZIndex = 310
             Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
             btn.MouseButton1Click:Connect(function()
-                DropBtn.Text = name
                 DropList.Visible = false
-                _G.BossFarmTarget = name
-                StatusLabel.Text = "Выбран босс: " .. name
             end)
             btn.Parent = DropList
-        end
-        if _G.BossFarmTarget and FindNPCByName(_G.BossFarmTarget) then
-            DropBtn.Text = _G.BossFarmTarget
+            DropBtn.Text = "Нет боссов"
+            StatusLabel.Text = "Нет живых боссов"
         else
-            DropBtn.Text = "Выбрать..."
-        end
-        StatusLabel.Text = "Найдено боссов: " .. #aliveBosses
-    end
-end
-
-DropBtn.MouseButton1Click:Connect(function()
-    for _, child in ipairs(BlackHoleHub:GetChildren()) do
-        if child:IsA("ScrollingFrame") and child.Name == "DropdownWindow" and child ~= DropList then
-            child.Visible = false
-        end
-    end
-    DropList.Visible = not DropList.Visible
-    if DropList.Visible then
-        DropList.Position = UDim2.new(0, DropBtn.AbsolutePosition.X, 0, DropBtn.AbsolutePosition.Y + DropBtn.AbsoluteSize.Y + 4)
-        RefreshBossDropdown()
-    end
-end)
-
-local ButtonRow1 = Instance.new("Frame", BossFrame)
-ButtonRow1.Size = UDim2.new(1, 0, 0, 40)
-ButtonRow1.Position = UDim2.new(0, 0, 0, 85)
-ButtonRow1.BackgroundTransparency = 1
-
-local BtnFly = Instance.new("TextButton", ButtonRow1)
-BtnFly.Size = UDim2.new(0.48, 0, 1, 0)
-BtnFly.Position = UDim2.new(0, 0, 0, 0)
-BtnFly.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
-BtnFly.Text = "Лететь за боссом"
-BtnFly.TextColor3 = Color3.fromRGB(0, 0, 0)
-BtnFly.Font = Enum.Font.GothamBold
-BtnFly.TextSize = fontSizeMedium
-Instance.new("UICorner", BtnFly).CornerRadius = UDim.new(0, 6)
-BtnFly.MouseButton1Click:Connect(function()
-    if not _G.BossFarmTarget then
-        StatusLabel.Text = "Сначала выбери босса!"
-        return
-    end
-    local boss = LoadBoss(_G.BossFarmTarget)
-    if boss then
-        currentTarget = boss
-        StatusLabel.Text = "Летим к " .. _G.BossFarmTarget
-    else
-        StatusLabel.Text = "Не удалось найти босса " .. _G.BossFarmTarget
-    end
-end)
-
-local BtnStop = Instance.new("TextButton", ButtonRow1)
-BtnStop.Size = UDim2.new(0.48, 0, 1, 0)
-BtnStop.Position = UDim2.new(0.52, 0, 0, 0)
-BtnStop.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-BtnStop.Text = "Остановить"
-BtnStop.TextColor3 = Color3.fromRGB(255, 255, 255)
-BtnStop.Font = Enum.Font.GothamBold
-BtnStop.TextSize = fontSizeMedium
-Instance.new("UICorner", BtnStop).CornerRadius = UDim.new(0, 6)
-BtnStop.MouseButton1Click:Connect(function()
-    _G.BossFarmTarget = nil
-    _G.BossFarmEnabled = false
-    currentTarget = nil
-    StatusLabel.Text = "Фарм босса остановлен"
-    DropBtn.Text = "Выбрать..."
-end)
-
-local function CreateToggleInline(parent, text, default, callback)
-    local Frame = Instance.new("Frame", parent)
-    Frame.Size = UDim2.new(1, 0, 0, 35)
-    Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    Frame.BackgroundTransparency = 0.5
-    Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
-    local Label = Instance.new("TextLabel", Frame)
-    Label.Size = UDim2.new(1, -50, 1, 0)
-    Label.Position = UDim2.new(0, 10, 0, 0)
-    Label.BackgroundTransparency = 1
-    Label.Text = text
-    Label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    Label.Font = Enum.Font.GothamSemibold
-    Label.TextSize = fontSizeMedium
-    Label.TextXAlignment = Enum.TextXAlignment.Left
-    local Check = Instance.new("TextButton", Frame)
-    Check.Size = UDim2.new(0, 25, 0, 25)
-    Check.Position = UDim2.new(1, -35, 0.5, -12.5)
-    Check.BackgroundColor3 = default and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(20, 20, 20)
-    Check.Text = ""
-    Instance.new("UICorner", Check).CornerRadius = UDim.new(0, 6)
-    local state = default
-    Check.MouseButton1Click:Connect(function()
-        state = not state
-        TweenService:Create(Check, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(20, 20, 20)}):Play()
-        pcall(callback, state)
-    end)
-end
-
-local ToggleRow = Instance.new("Frame", BossFrame)
-ToggleRow.Size = UDim2.new(1, 0, 0, 40)
-ToggleRow.Position = UDim2.new(0, 0, 0, 130)
-ToggleRow.BackgroundTransparency = 1
-CreateToggleInline(ToggleRow, "Авто-фарм босса", false, function(s)
-    _G.BossFarmEnabled = s
-    if not s then
-        if _G.BossFarmTarget and currentTarget and currentTarget.Name == _G.BossFarmTarget then
-            currentTarget = nil
-        end
-        StatusLabel.Text = "Авто-фарм босса отключён"
-    else
-        StatusLabel.Text = "Авто-фарм босса включён"
-    end
-end)
-
--- ====== МОРСКИЕ СОБЫТИЯ ======
-local SeaEventsSeparator = Instance.new("Frame", BossTab)
-SeaEventsSeparator.Size = UDim2.new(1, 0, 0, 10)
-SeaEventsSeparator.BackgroundTransparency = 1
-
-local SeaEventsLabel = Instance.new("TextLabel", BossTab)
-SeaEventsLabel.Size = UDim2.new(1, 0, 0, 30)
-SeaEventsLabel.BackgroundTransparency = 1
-SeaEventsLabel.Text = "🌊 Морские события"
-SeaEventsLabel.TextColor3 = Color3.fromRGB(255, 140, 0)
-SeaEventsLabel.Font = Enum.Font.GothamBold
-SeaEventsLabel.TextSize = fontSizeMedium
-SeaEventsLabel.TextXAlignment = Enum.TextXAlignment.Left
-
-CreateToggleInline(BossTab, "Фарм Sea Beast", _G.SeaBeastFarm, function(s)
-    _G.SeaBeastFarm = s
-    if not s then _G.SeaBeastTarget = nil end
-end)
-
-CreateToggleInline(BossTab, "Фарм Leviathan", _G.LeviathanFarm, function(s)
-    _G.LeviathanFarm = s
-end)
-
-CreateToggleInline(BossTab, "Фарм Terrorshark", _G.TerrorsharkFarm, function(s)
-    _G.TerrorsharkFarm = s
-end)
-
-CreateToggleInline(BossTab, "Фарм Hydra", _G.HydraFarm, function(s)
-    _G.HydraFarm = s
-end)
-
-CreateToggleInline(BossTab, "Фарм Ghost Ship", _G.GhostShipFarm, function(s)
-    _G.GhostShipFarm = s
-end)
-
-CreateToggleInline(BossTab, "Фарм Piranha", _G.PiranhaFarm, function(s)
-    _G.PiranhaFarm = s
-end)
-
-CreateSlider(BossTab, "Скорость полёта (Sea Events)", 100, 350, _G.SeaEventFlySpeed, function(v) _G.SeaEventFlySpeed = v end)
-CreateSlider(BossTab, "Высота над событием", 50, 150, _G.SeaEventHoverHeight, function(v) _G.SeaEventHoverHeight = v end)
-
--- ====== ТЕЛЕПОРТ ======
-local TeleportPage = TeleportTab
-
-local function CreateLocationGroup(parent, seaName, locations)
-    local GroupFrame = Instance.new("Frame", parent)
-    GroupFrame.Size = UDim2.new(1, 0, 0, 35)
-    GroupFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    GroupFrame.BackgroundTransparency = 0.5
-    Instance.new("UICorner", GroupFrame).CornerRadius = UDim.new(0, 6)
-    GroupFrame.ClipsDescendants = true
-
-    local ToggleBtn = Instance.new("TextButton", GroupFrame)
-    ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
-    ToggleBtn.BackgroundTransparency = 1
-    ToggleBtn.Text = "▼ " .. seaName
-    ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleBtn.Font = Enum.Font.GothamBold
-    ToggleBtn.TextSize = fontSizeMedium
-    ToggleBtn.TextXAlignment = Enum.TextXAlignment.Left
-
-    local Content = Instance.new("Frame", GroupFrame)
-    Content.Size = UDim2.new(1, 0, 0, 0)
-    Content.Position = UDim2.new(0, 0, 0, 35)
-    Content.BackgroundTransparency = 1
-    Content.Visible = false
-    Content.ClipsDescendants = true
-
-    local ContentLayout = Instance.new("UIListLayout", Content)
-    ContentLayout.Padding = UDim.new(0, 4)
-
-    local expanded = false
-
-    ToggleBtn.MouseButton1Click:Connect(function()
-        expanded = not expanded
-        if expanded then
-            ToggleBtn.Text = "▼ " .. seaName
-            Content.Visible = true
-            local count = #locations
-            local contentHeight = count * 35 + (count - 1) * 4
-            Content.Size = UDim2.new(1, 0, 0, contentHeight)
-            GroupFrame.Size = UDim2.new(1, 0, 0, 35 + contentHeight)
-        else
-            ToggleBtn.Text = "▶ " .. seaName
-            Content.Visible = false
-            Content.Size = UDim2.new(1, 0, 0, 0)
-            GroupFrame.Size = UDim2.new(1, 0, 0, 35)
-        end
-        local parentPage = parent:FindFirstAncestorOfClass("ScrollingFrame")
-        if parentPage then
-            parentPage.CanvasSize = UDim2.new(0, 0, 0, parent.AbsoluteSize.Y + 20)
-        end
-    end)
-
-    for _, loc in ipairs(locations) do
-        local locName = loc[1]
-        local x, y, z = loc[2], loc[3], loc[4]
-        local Btn = Instance.new("TextButton", Content)
-        Btn.Size = UDim2.new(1, -10, 0, 30)
-        Btn.Position = UDim2.new(0, 5, 0, 0)
-        Btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-        Btn.Text = locName
-        Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Btn.Font = Enum.Font.GothamSemibold
-        Btn.TextSize = fontSizeMedium
-        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
-        Btn.MouseButton1Click:Connect(function()
-            local targetPos = Vector3.new(x, y, z)
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                SmoothFlyTween(targetPos)
+            for _, name in ipairs(aliveBosses) do
+                local btn = Instance.new("TextButton")
+                btn.Size = UDim2.new(1, 0, 0, 30)
+                btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+                btn.Text = name
+                btn.TextColor3 = CurrentTheme.Text
+                btn.Font = Enum.Font.GothamBold
+                btn.TextSize = fontSizeMedium
+                btn.ZIndex = 310
+                Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+                btn.MouseButton1Click:Connect(function()
+                    DropBtn.Text = name
+                    DropList.Visible = false
+                    _G.BossFarmTarget = name
+                    StatusLabel.Text = "Выбран босс: " .. name
+                end)
+                btn.Parent = DropList
             end
+            if _G.BossFarmTarget and FindNPCByName(_G.BossFarmTarget) then
+                DropBtn.Text = _G.BossFarmTarget
+            else
+                DropBtn.Text = "Выбрать..."
+            end
+            StatusLabel.Text = "Найдено боссов: " .. #aliveBosses
+        end
+    end
+
+    DropBtn.MouseButton1Click:Connect(function()
+        for _, child in ipairs(BlackHoleHub:GetChildren()) do
+            if child:IsA("ScrollingFrame") and child.Name == "DropdownWindow" and child ~= DropList then
+                child.Visible = false
+            end
+        end
+        DropList.Visible = not DropList.Visible
+        if DropList.Visible then
+            DropList.Position = UDim2.new(0, DropBtn.AbsolutePosition.X, 0, DropBtn.AbsolutePosition.Y + DropBtn.AbsoluteSize.Y + 4)
+            RefreshBossDropdown()
+        end
+    end)
+
+    local ButtonRow1 = Instance.new("Frame", BossFrame)
+    ButtonRow1.Size = UDim2.new(1, 0, 0, 40)
+    ButtonRow1.Position = UDim2.new(0, 0, 0, 85)
+    ButtonRow1.BackgroundTransparency = 1
+
+    local BtnFly = Instance.new("TextButton", ButtonRow1)
+    BtnFly.Size = UDim2.new(0.48, 0, 1, 0)
+    BtnFly.Position = UDim2.new(0, 0, 0, 0)
+    BtnFly.BackgroundColor3 = CurrentTheme.Accent
+    BtnFly.Text = "Лететь за боссом"
+    BtnFly.TextColor3 = CurrentTheme.AccentText
+    BtnFly.Font = Enum.Font.GothamBold
+    BtnFly.TextSize = fontSizeMedium
+    Instance.new("UICorner", BtnFly).CornerRadius = UDim.new(0, 6)
+    BtnFly.MouseButton1Click:Connect(function()
+        if not _G.BossFarmTarget then
+            StatusLabel.Text = "Сначала выбери босса!"
+            return
+        end
+        local boss = LoadBoss(_G.BossFarmTarget)
+        if boss then
+            currentTarget = boss
+            StatusLabel.Text = "Летим к " .. _G.BossFarmTarget
+        else
+            StatusLabel.Text = "Не удалось найти босса " .. _G.BossFarmTarget
+        end
+    end)
+
+    local BtnStop = Instance.new("TextButton", ButtonRow1)
+    BtnStop.Size = UDim2.new(0.48, 0, 1, 0)
+    BtnStop.Position = UDim2.new(0.52, 0, 0, 0)
+    BtnStop.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    BtnStop.Text = "Остановить"
+    BtnStop.TextColor3 = Color3.fromRGB(255, 255, 255)
+    BtnStop.Font = Enum.Font.GothamBold
+    BtnStop.TextSize = fontSizeMedium
+    Instance.new("UICorner", BtnStop).CornerRadius = UDim.new(0, 6)
+    BtnStop.MouseButton1Click:Connect(function()
+        _G.BossFarmTarget = nil
+        _G.BossFarmEnabled = false
+        currentTarget = nil
+        StatusLabel.Text = "Фарм босса остановлен"
+        DropBtn.Text = "Выбрать..."
+    end)
+
+    local function CreateToggleInline(parent, text, default, callback)
+        local Frame = Instance.new("Frame", parent)
+        Frame.Size = UDim2.new(1, 0, 0, 35)
+        Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        Frame.BackgroundTransparency = 0.5
+        Instance.new("UICorner", Frame).CornerRadius = UDim.new(0, 6)
+        local Label = Instance.new("TextLabel", Frame)
+        Label.Size = UDim2.new(1, -50, 1, 0)
+        Label.Position = UDim2.new(0, 10, 0, 0)
+        Label.BackgroundTransparency = 1
+        Label.Text = text
+        Label.TextColor3 = CurrentTheme.Text
+        Label.Font = Enum.Font.GothamSemibold
+        Label.TextSize = fontSizeMedium
+        Label.TextXAlignment = Enum.TextXAlignment.Left
+        local Check = Instance.new("TextButton", Frame)
+        Check.Size = UDim2.new(0, 25, 0, 25)
+        Check.Position = UDim2.new(1, -35, 0.5, -12.5)
+        Check.BackgroundColor3 = default and CurrentTheme.Accent or Color3.fromRGB(20, 20, 20)
+        Check.Text = ""
+        Instance.new("UICorner", Check).CornerRadius = UDim.new(0, 6)
+        local state = default
+        Check.MouseButton1Click:Connect(function()
+            state = not state
+            TweenService:Create(Check, TweenInfo.new(0.2), {BackgroundColor3 = state and CurrentTheme.Accent or Color3.fromRGB(20, 20, 20)}):Play()
+            pcall(callback, state)
         end)
     end
 
-    return GroupFrame
+    local ToggleRow = Instance.new("Frame", BossFrame)
+    ToggleRow.Size = UDim2.new(1, 0, 0, 40)
+    ToggleRow.Position = UDim2.new(0, 0, 0, 130)
+    ToggleRow.BackgroundTransparency = 1
+    CreateToggleInline(ToggleRow, "Авто-фарм босса", false, function(s)
+        _G.BossFarmEnabled = s
+        if not s then
+            if _G.BossFarmTarget and currentTarget and currentTarget.Name == _G.BossFarmTarget then
+                currentTarget = nil
+            end
+            StatusLabel.Text = "Авто-фарм босса отключён"
+        else
+            StatusLabel.Text = "Авто-фарм босса включён"
+        end
+    end)
+
+    -- ====== МОРСКИЕ СОБЫТИЯ ======
+    local SeaEventsSeparator = Instance.new("Frame", BossTab)
+    SeaEventsSeparator.Size = UDim2.new(1, 0, 0, 10)
+    SeaEventsSeparator.BackgroundTransparency = 1
+
+    local SeaEventsLabel = Instance.new("TextLabel", BossTab)
+    SeaEventsLabel.Size = UDim2.new(1, 0, 0, 30)
+    SeaEventsLabel.BackgroundTransparency = 1
+    SeaEventsLabel.Text = "🌊 Морские события"
+    SeaEventsLabel.TextColor3 = CurrentTheme.Accent
+    SeaEventsLabel.Font = Enum.Font.GothamBold
+    SeaEventsLabel.TextSize = fontSizeMedium
+    SeaEventsLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    CreateToggleInline(BossTab, "Фарм Sea Beast", _G.SeaBeastFarm, function(s)
+        _G.SeaBeastFarm = s
+        if not s then _G.SeaBeastTarget = nil end
+    end)
+
+    CreateToggleInline(BossTab, "Фарм Leviathan", _G.LeviathanFarm, function(s)
+        _G.LeviathanFarm = s
+    end)
+
+    CreateToggleInline(BossTab, "Фарм Terrorshark", _G.TerrorsharkFarm, function(s)
+        _G.TerrorsharkFarm = s
+    end)
+
+    CreateToggleInline(BossTab, "Фарм Hydra", _G.HydraFarm, function(s)
+        _G.HydraFarm = s
+    end)
+
+    CreateToggleInline(BossTab, "Фарм Ghost Ship", _G.GhostShipFarm, function(s)
+        _G.GhostShipFarm = s
+    end)
+
+    CreateToggleInline(BossTab, "Фарм Piranha", _G.PiranhaFarm, function(s)
+        _G.PiranhaFarm = s
+    end)
+
+    CreateSlider(BossTab, "Скорость полёта (Sea Events)", 100, 350, _G.SeaEventFlySpeed, function(v) _G.SeaEventFlySpeed = v end)
+    CreateSlider(BossTab, "Высота над событием", 50, 150, _G.SeaEventHoverHeight, function(v) _G.SeaEventHoverHeight = v end)
+
+    -- ====== ТЕЛЕПОРТ ======
+    local TeleportPage = TeleportTab
+    local function CreateLocationGroup(parent, seaName, locations)
+        local GroupFrame = Instance.new("Frame", parent)
+        GroupFrame.Size = UDim2.new(1, 0, 0, 35)
+        GroupFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+        GroupFrame.BackgroundTransparency = 0.5
+        Instance.new("UICorner", GroupFrame).CornerRadius = UDim.new(0, 6)
+        GroupFrame.ClipsDescendants = true
+
+        local ToggleBtn = Instance.new("TextButton", GroupFrame)
+        ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
+        ToggleBtn.BackgroundTransparency = 1
+        ToggleBtn.Text = "▼ " .. seaName
+        ToggleBtn.TextColor3 = CurrentTheme.Text
+        ToggleBtn.Font = Enum.Font.GothamBold
+        ToggleBtn.TextSize = fontSizeMedium
+        ToggleBtn.TextXAlignment = Enum.TextXAlignment.Left
+
+        local Content = Instance.new("Frame", GroupFrame)
+        Content.Size = UDim2.new(1, 0, 0, 0)
+        Content.Position = UDim2.new(0, 0, 0, 35)
+        Content.BackgroundTransparency = 1
+        Content.Visible = false
+        Content.ClipsDescendants = true
+
+        local ContentLayout = Instance.new("UIListLayout", Content)
+        ContentLayout.Padding = UDim.new(0, 4)
+
+        local expanded = false
+
+        ToggleBtn.MouseButton1Click:Connect(function()
+            expanded = not expanded
+            if expanded then
+                ToggleBtn.Text = "▼ " .. seaName
+                Content.Visible = true
+                local count = #locations
+                local contentHeight = count * 35 + (count - 1) * 4
+                Content.Size = UDim2.new(1, 0, 0, contentHeight)
+                GroupFrame.Size = UDim2.new(1, 0, 0, 35 + contentHeight)
+            else
+                ToggleBtn.Text = "▶ " .. seaName
+                Content.Visible = false
+                Content.Size = UDim2.new(1, 0, 0, 0)
+                GroupFrame.Size = UDim2.new(1, 0, 0, 35)
+            end
+            local parentPage = parent:FindFirstAncestorOfClass("ScrollingFrame")
+            if parentPage then
+                parentPage.CanvasSize = UDim2.new(0, 0, 0, parent.AbsoluteSize.Y + 20)
+            end
+        end)
+
+        for _, loc in ipairs(locations) do
+            local locName = loc[1]
+            local x, y, z = loc[2], loc[3], loc[4]
+            local Btn = Instance.new("TextButton", Content)
+            Btn.Size = UDim2.new(1, -10, 0, 30)
+            Btn.Position = UDim2.new(0, 5, 0, 0)
+            Btn.BackgroundColor3 = CurrentTheme.Button
+            Btn.Text = locName
+            Btn.TextColor3 = CurrentTheme.Text
+            Btn.Font = Enum.Font.GothamSemibold
+            Btn.TextSize = fontSizeMedium
+            Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
+            Btn.MouseButton1Click:Connect(function()
+                local targetPos = Vector3.new(x, y, z)
+                local char = LocalPlayer.Character
+                if char and char:FindFirstChild("HumanoidRootPart") then
+                    SmoothFlyTween(targetPos)
+                end
+            end)
+        end
+
+        return GroupFrame
+    end
+
+    local TeleportContainer = Instance.new("Frame", TeleportPage)
+    TeleportContainer.Size = UDim2.new(1, 0, 1, 0)
+    TeleportContainer.BackgroundTransparency = 1
+
+    local TeleportLayout = Instance.new("UIListLayout", TeleportContainer)
+    TeleportLayout.Padding = UDim.new(0, 8)
+
+    CreateLocationGroup(TeleportContainer, "Sea 1", TeleportLocations["Sea 1"])
+    CreateLocationGroup(TeleportContainer, "Sea 2", TeleportLocations["Sea 2"])
+    CreateLocationGroup(TeleportContainer, "Sea 3", TeleportLocations["Sea 3"])
+
+    TeleportContainer:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
+        TeleportPage.CanvasSize = UDim2.new(0, 0, 0, TeleportContainer.AbsoluteSize.Y + 20)
+    end)
+
+    TeleportPage:GetPropertyChangedSignal("Visible"):Connect(function()
+        if TeleportPage.Visible then
+            task.wait(0.1)
+            TeleportPage.CanvasSize = UDim2.new(0, 0, 0, TeleportContainer.AbsoluteSize.Y + 20)
+        end
+    end)
+
+    -- ====== НАСТРОЙКИ ======
+    CreateSlider(SettingsTab, "Скорость Полета (Автофарм)", 100, 450, _G.FarmSpeed, function(v) _G.FarmSpeed = v end)
+    CreateSlider(SettingsTab, "Интервал кликов (мс)", 5, 200, _G.ClickInterval, function(v) 
+        _G.ClickInterval = v 
+    end)
+    CreateToggle(SettingsTab, "Noclip (Сквозь Стены)", _G.Noclip, function(s) _G.Noclip = s end)
+    CreateToggle(SettingsTab, "Бесконечные Прыжки", _G.InfJump, function(s) _G.InfJump = s end)
+    CreateToggle(SettingsTab, "Включить Полет (Fly)", _G.FlyEnabled, function(s) _G.FlyEnabled = s end)
+    CreateSlider(SettingsTab, "Скорость Полета (Fly)", 10, 300, _G.FlySpeed, function(v) _G.FlySpeed = v end)
+    CreateToggle(SettingsTab, "Своя Скорость Игрока", _G.WalkSpeedEnabled, function(s) _G.WalkSpeedEnabled = s end)
+    CreateSlider(SettingsTab, "Скорость (WalkSpeed)", 16, 250, _G.WalkSpeed, function(v) _G.WalkSpeed = v end)
+    CreateToggle(SettingsTab, "Свой Прыжок", _G.JumpPowerEnabled, function(s) _G.JumpPowerEnabled = s end)
+    CreateSlider(SettingsTab, "Прыжок (JumpPower)", 50, 250, _G.JumpPower, function(v) _G.JumpPower = v end)
+    CreateToggle(SettingsTab, "FullBright (Яркость)", _G.FullBrightEnabled, function(s)
+        _G.FullBrightEnabled = s
+        if s then
+            Lighting.Brightness = 2
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 100000
+            Lighting.GlobalShadows = false
+            Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
+        else
+            Lighting.Brightness = 1
+            Lighting.ClockTime = 14
+            Lighting.FogEnd = 100000
+            Lighting.GlobalShadows = true
+            Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+        end
+    end)
+
+    -- Выбор темы
+    CreateDropdown(SettingsTab, "Тема оформления", function()
+        local themes = {}
+        for name, _ in pairs(Themes) do table.insert(themes, name) end
+        return themes
+    end, function(selected)
+        _G.CurrentTheme = selected
+        BuildGUI()
+    end)
+
+    -- ====== КОНФИГИ ======
+    local ConfigFrame = Instance.new("Frame", ConfigTab)
+    ConfigFrame.Size = UDim2.new(1, 0, 0, 300)
+    ConfigFrame.BackgroundTransparency = 1
+
+    local ConfigNameBox = Instance.new("TextBox", ConfigFrame)
+    ConfigNameBox.Size = UDim2.new(1, 0, 0, 35)
+    ConfigNameBox.Position = UDim2.new(0, 0, 0, 0)
+    ConfigNameBox.PlaceholderText = "Название конфига"
+    ConfigNameBox.Text = ""
+    ConfigNameBox.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    ConfigNameBox.TextColor3 = CurrentTheme.Text
+    ConfigNameBox.Font = Enum.Font.Gotham
+    ConfigNameBox.TextSize = fontSizeMedium
+    Instance.new("UICorner", ConfigNameBox).CornerRadius = UDim.new(0, 6)
+
+    local SaveBtn = Instance.new("TextButton", ConfigFrame)
+    SaveBtn.Size = UDim2.new(1, 0, 0, 35)
+    SaveBtn.Position = UDim2.new(0, 0, 0, 45)
+    SaveBtn.BackgroundColor3 = CurrentTheme.Accent
+    SaveBtn.Text = "Сохранить"
+    SaveBtn.TextColor3 = CurrentTheme.AccentText
+    SaveBtn.Font = Enum.Font.GothamBold
+    SaveBtn.TextSize = fontSizeMedium
+    Instance.new("UICorner", SaveBtn).CornerRadius = UDim.new(0, 6)
+
+    local LoadBtn = Instance.new("TextButton", ConfigFrame)
+    LoadBtn.Size = UDim2.new(1, 0, 0, 35)
+    LoadBtn.Position = UDim2.new(0, 0, 0, 85)
+    LoadBtn.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+    LoadBtn.Text = "Загрузить"
+    LoadBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    LoadBtn.Font = Enum.Font.GothamBold
+    LoadBtn.TextSize = fontSizeMedium
+    Instance.new("UICorner", LoadBtn).CornerRadius = UDim.new(0, 6)
+
+    local DeleteBtn = Instance.new("TextButton", ConfigFrame)
+    DeleteBtn.Size = UDim2.new(1, 0, 0, 35)
+    DeleteBtn.Position = UDim2.new(0, 0, 0, 125)
+    DeleteBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+    DeleteBtn.Text = "Удалить"
+    DeleteBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    DeleteBtn.Font = Enum.Font.GothamBold
+    DeleteBtn.TextSize = fontSizeMedium
+    Instance.new("UICorner", DeleteBtn).CornerRadius = UDim.new(0, 6)
+
+    local ConfigListLabel = Instance.new("TextLabel", ConfigFrame)
+    ConfigListLabel.Size = UDim2.new(1, 0, 0, 25)
+    ConfigListLabel.Position = UDim2.new(0, 0, 0, 170)
+    ConfigListLabel.BackgroundTransparency = 1
+    ConfigListLabel.Text = "Сохранённые конфиги:"
+    ConfigListLabel.TextColor3 = CurrentTheme.Text
+    ConfigListLabel.Font = Enum.Font.GothamSemibold
+    ConfigListLabel.TextSize = fontSizeMedium
+    ConfigListLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    local ConfigList = Instance.new("ScrollingFrame", ConfigFrame)
+    ConfigList.Size = UDim2.new(1, 0, 0, 120)
+    ConfigList.Position = UDim2.new(0, 0, 0, 200)
+    ConfigList.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+    ConfigList.BorderSizePixel = 0
+    ConfigList.ScrollBarThickness = 2
+    Instance.new("UICorner", ConfigList).CornerRadius = UDim.new(0, 6)
+    local listLayout = Instance.new("UIListLayout", ConfigList)
+    listLayout.Padding = UDim.new(0, 2)
+
+    local function RefreshConfigList()
+        for _, child in ipairs(ConfigList:GetChildren()) do if child:IsA("TextButton") then child:Destroy() end end
+        for name, _ in pairs(_G.Configs) do
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, 0, 0, 25)
+            btn.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+            btn.Text = name
+            btn.TextColor3 = CurrentTheme.Text
+            btn.Font = Enum.Font.Gotham
+            btn.TextSize = fontSizeMedium
+            Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 4)
+            btn.MouseButton1Click:Connect(function()
+                ConfigNameBox.Text = name
+            end)
+            btn.Parent = ConfigList
+        end
+    end
+
+    SaveBtn.MouseButton1Click:Connect(function()
+        local name = ConfigNameBox.Text
+        if name == "" then return end
+        local data = {}
+        for k, v in pairs(_G) do
+            if k ~= "Configs" and type(v) ~= "function" and type(v) ~= "userdata" and type(v) ~= "thread" then
+                data[k] = v
+            end
+        end
+        _G.Configs[name] = HttpService:JSONEncode(data)
+        pcall(function()
+            writefile("BlackHoleHub_Config_"..name..".json", _G.Configs[name])
+        end)
+        RefreshConfigList()
+    end)
+
+    LoadBtn.MouseButton1Click:Connect(function()
+        local name = ConfigNameBox.Text
+        if not _G.Configs[name] then return end
+        local success, data = pcall(function() return HttpService:JSONDecode(_G.Configs[name]) end)
+        if success then
+            for k, v in pairs(data) do
+                if k ~= "Configs" then
+                    _G[k] = v
+                end
+            end
+            BuildGUI()
+        end
+    end)
+
+    DeleteBtn.MouseButton1Click:Connect(function()
+        local name = ConfigNameBox.Text
+        if _G.Configs[name] then
+            _G.Configs[name] = nil
+            pcall(function() delfile("BlackHoleHub_Config_"..name..".json") end)
+            RefreshConfigList()
+        end
+    end)
+
+    -- Активация первой вкладки
+    Tabs[1].Page.Visible = true
+    TweenService:Create(Tabs[1].Btn, TweenInfo.new(0.2), {BackgroundColor3 = CurrentTheme.Accent, TextColor3 = CurrentTheme.AccentText}):Play()
+
+    return BlackHoleHub
 end
 
-local TeleportContainer = Instance.new("Frame", TeleportPage)
-TeleportContainer.Size = UDim2.new(1, 0, 1, 0)
-TeleportContainer.BackgroundTransparency = 1
+-- Построить GUI
+BuildGUI()
 
-local TeleportLayout = Instance.new("UIListLayout", TeleportContainer)
-TeleportLayout.Padding = UDim.new(0, 8)
+------------------------------------------------------------------------
+-- УМНЫЕ ФРУКТЫ И СУНДУКИ
+------------------------------------------------------------------------
+local function TryPickFruit(fruit)
+    if not fruit then return false end
+    local prompt = fruit:FindFirstChildOfClass("ProximityPrompt")
+    if not prompt and fruit.Parent then
+        prompt = fruit.Parent:FindFirstChildOfClass("ProximityPrompt")
+    end
+    if prompt then
+        pcall(function()
+            fireproximityprompt(prompt)
+        end)
+        return true
+    end
+    if fruit:FindFirstChild("Handle") then
+        SmoothFlyTween(fruit.Handle.Position)
+        task.wait(0.5)
+        if not fruit.Parent then
+            return true
+        end
+    end
+    return false
+end
 
-CreateLocationGroup(TeleportContainer, "Sea 1", TeleportLocations["Sea 1"])
-CreateLocationGroup(TeleportContainer, "Sea 2", TeleportLocations["Sea 2"])
-CreateLocationGroup(TeleportContainer, "Sea 3", TeleportLocations["Sea 3"])
-
-TeleportContainer:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-    TeleportPage.CanvasSize = UDim2.new(0, 0, 0, TeleportContainer.AbsoluteSize.Y + 20)
-end)
-
-TeleportPage:GetPropertyChangedSignal("Visible"):Connect(function()
-    if TeleportPage.Visible then
-        task.wait(0.1)
-        TeleportPage.CanvasSize = UDim2.new(0, 0, 0, TeleportContainer.AbsoluteSize.Y + 20)
+task.spawn(function()
+    while task.wait(1) do
+        if _G.AutoFruitFinder and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local fruits = {}
+            for _, obj in ipairs(Workspace:GetDescendants()) do
+                if obj:IsA("Tool") and obj:FindFirstChild("Handle") and (obj.Name:lower():find("fruit") or obj.Name:lower():find("devil")) then
+                    local dist = (LocalPlayer.Character.HumanoidRootPart.Position - obj.Handle.Position).Magnitude
+                    table.insert(fruits, {obj = obj, dist = dist})
+                end
+            end
+            table.sort(fruits, function(a, b) return a.dist < b.dist end)
+            for _, fruitData in ipairs(fruits) do
+                local fruitId = fruitData.obj.Name .. "_" .. (fruitData.obj:GetAttribute("FruitID") or "")
+                if not collectedFruits[fruitId] then
+                    collectedFruits[fruitId] = true
+                    SmoothFlyTween(fruitData.obj.Handle.Position)
+                    TryPickFruit(fruitData.obj)
+                    break
+                end
+            end
+        end
     end
 end)
 
-------------------------------------------------------------------------
--- НАСТРОЙКИ
-------------------------------------------------------------------------
-CreateSlider(SettingsTab, "Скорость Полета (Автофарм)", 100, 450, _G.FarmSpeed, function(v) _G.FarmSpeed = v end)
-CreateSlider(SettingsTab, "Интервал кликов (мс)", 5, 200, _G.ClickInterval, function(v) 
-    _G.ClickInterval = v 
-end)
-CreateToggle(SettingsTab, "Noclip (Сквозь Стены)", _G.Noclip, function(s) _G.Noclip = s end)
-CreateToggle(SettingsTab, "Бесконечные Прыжки", _G.InfJump, function(s) _G.InfJump = s end)
-CreateToggle(SettingsTab, "Включить Полет (Fly)", _G.FlyEnabled, function(s) _G.FlyEnabled = s end)
-CreateSlider(SettingsTab, "Скорость Полета (Fly)", 10, 300, _G.FlySpeed, function(v) _G.FlySpeed = v end)
-CreateToggle(SettingsTab, "Своя Скорость Игрока", _G.WalkSpeedEnabled, function(s) _G.WalkSpeedEnabled = s end)
-CreateSlider(SettingsTab, "Скорость (WalkSpeed)", 16, 250, _G.WalkSpeed, function(v) _G.WalkSpeed = v end)
-CreateToggle(SettingsTab, "Свой Прыжок", _G.JumpPowerEnabled, function(s) _G.JumpPowerEnabled = s end)
-CreateSlider(SettingsTab, "Прыжок (JumpPower)", 50, 250, _G.JumpPower, function(v) _G.JumpPower = v end)
-CreateToggle(SettingsTab, "FullBright (Яркость)", _G.FullBrightEnabled, function(s)
-    _G.FullBrightEnabled = s
-    if s then
-        Lighting.Brightness = 2
-        Lighting.ClockTime = 14
-        Lighting.FogEnd = 100000
-        Lighting.GlobalShadows = false
-        Lighting.OutdoorAmbient = Color3.fromRGB(128, 128, 128)
-    else
-        Lighting.Brightness = 1
-        Lighting.ClockTime = 14
-        Lighting.FogEnd = 100000
-        Lighting.GlobalShadows = true
-        Lighting.OutdoorAmbient = Color3.fromRGB(127, 127, 127)
+task.spawn(function()
+    while task.wait(0.4) do
+        if _G.AutoChestSteal and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local chests = {}
+            if Workspace:FindFirstChild("ChestModels") then
+                for _, chest in ipairs(Workspace.ChestModels:GetChildren()) do
+                    if chest:IsA("Model") and chest:FindFirstChildWhichIsA("BasePart") then
+                        local p = chest:FindFirstChildWhichIsA("BasePart")
+                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - p.Position).Magnitude
+                        table.insert(chests, {model = chest, part = p, dist = dist})
+                    end
+                end
+            else
+                for _, el in ipairs(Workspace:GetChildren()) do
+                    if el.Name:lower():find("chest") and el:IsA("Model") and el:FindFirstChildWhichIsA("BasePart") then
+                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - el:FindFirstChildWhichIsA("BasePart").Position).Magnitude
+                        table.insert(chests, {model = el, part = el:FindFirstChildWhichIsA("BasePart"), dist = dist})
+                    end
+                end
+            end
+            if #chests > 0 then
+                table.sort(chests, function(a, b) return a.dist < b.dist end)
+                local nearestChest = chests[1]
+                SmoothFlyTween(nearestChest.part.Position)
+                task.wait(0.2)
+                pcall(function()
+                    local prompt = nearestChest.model:FindFirstChildOfClass("ProximityPrompt")
+                    if prompt then fireproximityprompt(prompt) end
+                end)
+            end
+        end
     end
 end)
 
@@ -1520,66 +1805,6 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- УМНЫЕ ФРУКТЫ И СУНДУКИ
-------------------------------------------------------------------------
-task.spawn(function()
-    while task.wait(1) do
-        if _G.AutoFruitFinder and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local fruits = {}
-            for _, obj in ipairs(Workspace:GetDescendants()) do
-                if obj:IsA("Tool") and obj:FindFirstChild("Handle") and (obj.Name:lower():find("fruit") or obj.Name:lower():find("devil")) then
-                    local dist = (LocalPlayer.Character.HumanoidRootPart.Position - obj.Handle.Position).Magnitude
-                    table.insert(fruits, {obj = obj, dist = dist})
-                end
-            end
-            table.sort(fruits, function(a, b) return a.dist < b.dist end)
-            for _, fruitData in ipairs(fruits) do
-                local fruitId = fruitData.obj.Name .. "_" .. (fruitData.obj:GetAttribute("FruitID") or "")
-                if not collectedFruits[fruitId] then
-                    collectedFruits[fruitId] = true
-                    SmoothFlyTween(fruitData.obj.Handle.Position)
-                    break
-                end
-            end
-        end
-    end
-end)
-
-task.spawn(function()
-    while task.wait(0.4) do
-        if _G.AutoChestSteal and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
-            local chests = {}
-            if Workspace:FindFirstChild("ChestModels") then
-                for _, chest in ipairs(Workspace.ChestModels:GetChildren()) do
-                    if chest:IsA("Model") and chest:FindFirstChildWhichIsA("BasePart") then
-                        local p = chest:FindFirstChildWhichIsA("BasePart")
-                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - p.Position).Magnitude
-                        table.insert(chests, {model = chest, part = p, dist = dist})
-                    end
-                end
-            else
-                for _, el in ipairs(Workspace:GetChildren()) do
-                    if el.Name:lower():find("chest") and el:IsA("Model") and el:FindFirstChildWhichIsA("BasePart") then
-                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - el:FindFirstChildWhichIsA("BasePart").Position).Magnitude
-                        table.insert(chests, {model = el, part = el:FindFirstChildWhichIsA("BasePart"), dist = dist})
-                    end
-                end
-            end
-            if #chests > 0 then
-                table.sort(chests, function(a, b) return a.dist < b.dist end)
-                local nearestChest = chests[1]
-                SmoothFlyTween(nearestChest.part.Position)
-                task.wait(0.2)
-                pcall(function()
-                    local prompt = nearestChest.model:FindFirstChildOfClass("ProximityPrompt")
-                    if prompt then fireproximityprompt(prompt) end
-                end)
-            end
-        end
-    end
-end)
-
-------------------------------------------------------------------------
 -- ПЛАВНЫЙ ПОЛЕТ И АТАКА (для одного врага)
 ------------------------------------------------------------------------
 RunService.RenderStepped:Connect(function(deltaTime)
@@ -1622,6 +1847,4 @@ RunService.RenderStepped:Connect(function(deltaTime)
     end
 end)
 
--- Активация первой вкладки
-Tabs[1].Page.Visible = true
-TweenService:Create(Tabs[1].Btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 140, 0), TextColor3 = Color3.fromRGB(0, 0, 0)}):Play()
+-- Активация первой вкладки уже выполнена в BuildGUI

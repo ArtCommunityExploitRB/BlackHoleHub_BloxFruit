@@ -1,5 +1,5 @@
 -- [[ 🌌 BLACK HOLE HUB | ArtSquadFive | THE ULTIMATE PROGRESSION 🌌 ]]
--- Версия 3.8 – добавлены конфиги, темы, улучшен сбор фруктов
+-- Версия 4.0 – Low End Mode, Конфиги с сохранением в папку BlackHoleHub/Config
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -60,6 +60,7 @@ local _G = {
     GUIOpen = false,
     CurrentTheme = "Orange",
     Configs = {},
+    LowEndMode = false,
 }
 
 local WeaponsList = {}
@@ -69,6 +70,7 @@ local lastSkillTime = 0
 local skillKeys = {Enum.KeyCode.Z, Enum.KeyCode.X, Enum.KeyCode.C, Enum.KeyCode.V}
 local currentTarget = nil
 local clickCounter = 0
+local lastRenderUpdate = 0 -- для LowEndMode
 
 -- СПИСОК БОССОВ
 local BossList = {
@@ -421,6 +423,13 @@ local function SmoothFlyTween(targetPos)
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     local root = char.HumanoidRootPart
+
+    -- Low End Mode: мгновенный телепорт
+    if _G.LowEndMode then
+        root.CFrame = CFrame.new(targetPos)
+        return
+    end
+
     local dist = (root.Position - targetPos).Magnitude
     for _, v in pairs(root:GetChildren()) do
         if v:IsA("BodyVelocity") or v:IsA("BodyPosition") or v:IsA("BodyGyro") then v:Destroy() end
@@ -833,7 +842,7 @@ local function BuildGUI()
         return Page
     end
 
-    -- Конструкторы элементов с темой
+    -- Конструкторы элементов
     local function CreateToggle(parent, text, default, callback)
         local Frame = Instance.new("Frame", parent)
         Frame.Size = UDim2.new(1, 0, 0, 35)
@@ -1414,6 +1423,19 @@ local function BuildGUI()
         end
     end)
 
+    -- Low End Mode
+    CreateToggle(SettingsTab, "Low End Mode (Слабый ПК)", _G.LowEndMode, function(s)
+        _G.LowEndMode = s
+        if s then
+            _G.ClickInterval = math.max(_G.ClickInterval, 60)
+            if _G.FullBrightEnabled then
+                _G.FullBrightEnabled = false
+                Lighting.Brightness = 1
+                Lighting.GlobalShadows = true
+            end
+        end
+    end)
+
     -- Выбор темы
     CreateDropdown(SettingsTab, "Тема оформления", function()
         local themes = {}
@@ -1518,14 +1540,24 @@ local function BuildGUI()
             end
         end
         _G.Configs[name] = HttpService:JSONEncode(data)
+        -- Сохранение в папку BlackHoleHub/Config
         pcall(function()
-            writefile("BlackHoleHub_Config_"..name..".json", _G.Configs[name])
+            if not isfolder("BlackHoleHub") then makefolder("BlackHoleHub") end
+            if not isfolder("BlackHoleHub/Config") then makefolder("BlackHoleHub/Config") end
+            writefile("BlackHoleHub/Config/" .. name .. ".json", _G.Configs[name])
         end)
         RefreshConfigList()
     end)
 
     LoadBtn.MouseButton1Click:Connect(function()
         local name = ConfigNameBox.Text
+        if not _G.Configs[name] then
+            -- попытка загрузить из файла
+            pcall(function()
+                local content = readfile("BlackHoleHub/Config/" .. name .. ".json")
+                _G.Configs[name] = content
+            end)
+        end
         if not _G.Configs[name] then return end
         local success, data = pcall(function() return HttpService:JSONDecode(_G.Configs[name]) end)
         if success then
@@ -1542,7 +1574,9 @@ local function BuildGUI()
         local name = ConfigNameBox.Text
         if _G.Configs[name] then
             _G.Configs[name] = nil
-            pcall(function() delfile("BlackHoleHub_Config_"..name..".json") end)
+            pcall(function()
+                delfile("BlackHoleHub/Config/" .. name .. ".json")
+            end)
             RefreshConfigList()
         end
     end)
@@ -1551,10 +1585,24 @@ local function BuildGUI()
     Tabs[1].Page.Visible = true
     TweenService:Create(Tabs[1].Btn, TweenInfo.new(0.2), {BackgroundColor3 = CurrentTheme.Accent, TextColor3 = CurrentTheme.AccentText}):Play()
 
-    return BlackHoleHub
+    -- Загрузка сохранённых конфигов из папки при первом запуске
+    task.spawn(function()
+        pcall(function()
+            if isfolder("BlackHoleHub/Config") then
+                local files = listfiles("BlackHoleHub/Config")
+                for _, file in ipairs(files) do
+                    local fileName = file:match("([^/]+)%.json$")
+                    if fileName then
+                        local content = readfile(file)
+                        _G.Configs[fileName] = content
+                    end
+                end
+                RefreshConfigList()
+            end
+        end)
+    end)
 end
 
--- Построить GUI
 BuildGUI()
 
 ------------------------------------------------------------------------
@@ -1583,7 +1631,7 @@ local function TryPickFruit(fruit)
 end
 
 task.spawn(function()
-    while task.wait(1) do
+    while task.wait(_G.LowEndMode and 2 or 1) do
         if _G.AutoFruitFinder and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local fruits = {}
             for _, obj in ipairs(Workspace:GetDescendants()) do
@@ -1607,7 +1655,7 @@ task.spawn(function()
 end)
 
 task.spawn(function()
-    while task.wait(0.4) do
+    while task.wait(_G.LowEndMode and 0.8 or 0.4) do
         if _G.AutoChestSteal and LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
             local chests = {}
             if Workspace:FindFirstChild("ChestModels") then
@@ -1644,7 +1692,7 @@ end)
 -- ГЛАВНЫЙ ЦИКЛ ФАРМА
 ------------------------------------------------------------------------
 task.spawn(function()
-    while task.wait(0.1) do
+    while task.wait(_G.LowEndMode and 0.2 or 0.1) do
         local char = LocalPlayer.Character
         if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
             currentTarget = nil
@@ -1808,6 +1856,11 @@ end)
 -- ПЛАВНЫЙ ПОЛЕТ И АТАКА (для одного врага)
 ------------------------------------------------------------------------
 RunService.RenderStepped:Connect(function(deltaTime)
+    if _G.LowEndMode then
+        if tick() - lastRenderUpdate < 0.1 then return end
+        lastRenderUpdate = tick()
+    end
+
     if not currentTarget then return end
     if not currentTarget.Parent or not currentTarget:FindFirstChild("HumanoidRootPart") then return end
     local char = LocalPlayer.Character
@@ -1846,5 +1899,3 @@ RunService.RenderStepped:Connect(function(deltaTime)
         myRoot.CFrame = targetCF
     end
 end)
-
--- Активация первой вкладки уже выполнена в BuildGUI

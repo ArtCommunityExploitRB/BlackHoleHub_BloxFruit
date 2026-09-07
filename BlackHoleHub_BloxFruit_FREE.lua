@@ -1,5 +1,5 @@
 -- [[ 🌌 BLACK HOLE HUB | ArtSquadFive | THE ULTIMATE PROGRESSION 🌌 ]]
--- Версия 3.7 – финальный полный код
+-- Версия 4.9 – Полный код с исправлениями
 
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
@@ -13,6 +13,7 @@ local VirtualInputManager = game:GetService("VirtualInputManager")
 local HttpService = game:GetService("HttpService")
 local GuiService = game:GetService("GuiService")
 local Lighting = game:GetService("Lighting")
+local Drawing = (getgenv and getgenv().Drawing) or Drawing
 
 local LocalPlayer = Players.LocalPlayer
 
@@ -58,6 +59,22 @@ local _G = {
     SeaEventHoverHeight = 85,
     FullBrightEnabled = false,
     GUIOpen = false,
+    AccentColor = Color3.fromRGB(255, 140, 0),
+    Theme = "Оранжевая",
+}
+
+-- Таблица тем
+local Themes = {
+    ["Оранжевая"] = Color3.fromRGB(255, 140, 0),
+    ["Красная"] = Color3.fromRGB(255, 50, 50),
+    ["Синяя"] = Color3.fromRGB(50, 150, 255),
+    ["Зеленая"] = Color3.fromRGB(50, 255, 100),
+    ["Фиолетовая"] = Color3.fromRGB(180, 80, 255),
+    ["Розовая"] = Color3.fromRGB(255, 100, 200),
+    ["Желтая"] = Color3.fromRGB(255, 255, 50),
+    ["Белая"] = Color3.fromRGB(255, 255, 255),
+    ["Циан"] = Color3.fromRGB(0, 255, 255),
+    ["Лайм"] = Color3.fromRGB(180, 255, 0),
 }
 
 local WeaponsList = {}
@@ -131,7 +148,7 @@ local BossSpawnLocations = {
     ["Core"] = Vector3.new(0, 0, 0),
 }
 
--- Таблица локаций
+-- Таблица локаций (оставлена для возможного использования, но интерфейс телепортов удалён)
 local TeleportLocations = {
     ["Sea 1"] = {
         {"Pirate Starter", -1057, 15, 1550},
@@ -173,9 +190,9 @@ local TeleportLocations = {
 }
 
 ------------------------------------------------------------------------
--- ТАБЛИЦА КВЕСТОВ (полная)
+-- ТАБЛИЦА КВЕСТОВ (полная) – ГЛОБАЛЬНАЯ
 ------------------------------------------------------------------------
-local MainQuestTable = {
+MainQuestTable = {
     BanditQuest1 = { { LevelReq = 0, Name = "Bandits", Task = { ["Bandit"] = 5 } } },
     MarineQuest = { { LevelReq = 0, Name = "Trainees", Task = { ["Trainee"] = 5 } } },
     JungleQuest = { { LevelReq = 10, Name = "Monkeys", Task = { ["Monkey"] = 6 } }, { LevelReq = 15, Name = "Gorillas", Task = { ["Gorilla"] = 8 } }, { LevelReq = 20, Name = "Gorilla King", Task = { ["The Gorilla King"] = 1 } } },
@@ -226,6 +243,7 @@ local MainQuestTable = {
     SubmergedQuest2 = { { LevelReq = 2650, Name = "Sea Chanter", Task = { ["Sea Chanter"] = 8 } }, { LevelReq = 2675, Name = "Ocean Prophet", Task = { ["Ocean Prophet"] = 8 } } },
     SubmergedQuest3 = { { LevelReq = 2675, Name = "High Disciple", Task = { ["High Disciple"] = 8 } }, { LevelReq = 2700, Name = "Grand Devotee", Task = { ["Grand Devotee"] = 8 } } }
 }
+_G.MainQuestTable = MainQuestTable
 
 ------------------------------------------------------------------------
 -- АВТОМАТИЧЕСКАЯ АДАПТАЦИЯ ПОД ЛЮБОЙ ЭКРАН
@@ -252,8 +270,14 @@ local baseWidth, baseHeight
 if deviceType == "console" then
     baseWidth, baseHeight = 900, 600
 elseif deviceType == "phone" then
-    baseWidth = math.min(screenW * 0.8, 340)
-    baseHeight = math.min(screenH * 0.6, 280)
+    -- Компактный режим телефона. Учитываем портрет/альбомную ориентацию.
+    if screenW >= screenH then
+        baseWidth = math.clamp(screenW * 0.78, 300, 390)
+        baseHeight = math.clamp(screenH * 0.72, 210, 280)
+    else
+        baseWidth = math.clamp(screenW * 0.86, 270, 330)
+        baseHeight = math.clamp(screenH * 0.50, 200, 245)
+    end
 elseif deviceType == "tablet" then
     baseWidth = math.min(screenW * 0.7, 500)
     baseHeight = math.min(screenH * 0.7, 420)
@@ -264,7 +288,7 @@ end
 
 local sidebarWidth = 160
 if deviceType == "phone" then
-    sidebarWidth = 100
+    sidebarWidth = screenW >= screenH and 82 or 78
 elseif deviceType == "tablet" then
     sidebarWidth = 140
 elseif deviceType == "console" then
@@ -275,9 +299,9 @@ local fontSizeSmall = 11
 local fontSizeMedium = 13
 local fontSizeLarge = 16
 if deviceType == "phone" then
-    fontSizeSmall = 9
-    fontSizeMedium = 11
-    fontSizeLarge = 13
+    fontSizeSmall = 8
+    fontSizeMedium = 9
+    fontSizeLarge = 11
 elseif deviceType == "tablet" then
     fontSizeSmall = 12
     fontSizeMedium = 14
@@ -315,7 +339,7 @@ IntroText.Size = UDim2.new(1, 0, 0, 100)
 IntroText.Position = UDim2.new(0, 0, 0.5, -50)
 IntroText.BackgroundTransparency = 1
 IntroText.Text = "BLACK HOLE HUB"
-IntroText.TextColor3 = Color3.fromRGB(255, 140, 0)
+IntroText.TextColor3 = _G.AccentColor
 IntroText.Font = Enum.Font.GothamBlack
 IntroText.TextSize = 60
 IntroText.TextTransparency = 1
@@ -353,7 +377,7 @@ Instance.new("UICorner", Main).CornerRadius = UDim.new(0, 10)
 local MainStroke = Instance.new("UIStroke", Main)
 MainStroke.Thickness = 2
 local StrokeGradient = Instance.new("UIGradient", MainStroke)
-StrokeGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 140, 0)), ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 10))}
+StrokeGradient.Color = ColorSequence.new{ColorSequenceKeypoint.new(0, _G.AccentColor), ColorSequenceKeypoint.new(1, Color3.fromRGB(10, 10, 10))}
 StrokeGradient.Rotation = 45
 local BgImage = Instance.new("ImageLabel", Main)
 BgImage.Size = UDim2.new(1, 0, 1, 0)
@@ -371,7 +395,7 @@ Instance.new("UICorner", TopBar).CornerRadius = UDim.new(0, 10)
 local TitleLabel = Instance.new("TextLabel", TopBar)
 TitleLabel.Text = "BLACK HOLE HUB | ArtSquadFive"
 TitleLabel.Font = Enum.Font.GothamBold
-TitleLabel.TextColor3 = Color3.fromRGB(255, 140, 0)
+TitleLabel.TextColor3 = _G.AccentColor
 TitleLabel.TextSize = fontSizeLarge
 TitleLabel.Position = UDim2.new(0, 15, 0, 0)
 TitleLabel.Size = UDim2.new(0, 300, 1, 0)
@@ -409,12 +433,12 @@ CollapseBtn.MouseButton1Click:Connect(CollapseToggle)
 -- Мобильная кнопка
 local MobileToggleBtn = Instance.new("ImageButton", BlackHoleHub)
 if isMobile then
-    MobileToggleBtn.Size = UDim2.new(0, 50, 0, 50)
-    MobileToggleBtn.Position = UDim2.new(0, 20, 0.5, -25)
+    MobileToggleBtn.Size = UDim2.new(0, 44, 0, 44)
+    MobileToggleBtn.Position = UDim2.new(0, 12, 0.5, -22)
 else
     MobileToggleBtn.Visible = false
 end
-MobileToggleBtn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+MobileToggleBtn.BackgroundColor3 = _G.AccentColor
 MobileToggleBtn.Image = "rbxassetid://89122563169047"
 Instance.new("UICorner", MobileToggleBtn).CornerRadius = UDim.new(1, 0)
 Instance.new("UIStroke", MobileToggleBtn).Color = Color3.fromRGB(255,255,255)
@@ -464,6 +488,153 @@ Container.Position = UDim2.new(0, sidebarWidth + 20, 0, 50)
 Container.Size = UDim2.new(1, -(sidebarWidth + 30), 1, -60)
 Instance.new("UICorner", Container).CornerRadius = UDim.new(0, 8)
 
+------------------------------------------------------------------------
+-- АВТО-АДАПТАЦИЯ UI ПОД ТЕЛЕФОН / ПЛАНШЕТ / ПОВОРОТ ЭКРАНА
+------------------------------------------------------------------------
+local MainScale = Instance.new("UIScale")
+MainScale.Name = "ResponsiveScale"
+MainScale.Scale = 1
+MainScale.Parent = Main
+
+local function GetResponsiveMetrics()
+    local camera = Workspace.CurrentCamera
+    if not camera then
+        return baseWidth, baseHeight, sidebarWidth, fontSizeSmall, fontSizeMedium, fontSizeLarge, 1
+    end
+
+    local size = camera.ViewportSize
+    local w, h = size.X, size.Y
+    local mobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+    local console = GuiService:IsTenFootInterface()
+
+    local width, height, side
+    local fsSmall, fsMedium, fsLarge
+    local scale = 1
+
+    if console then
+        width, height = 900, 600
+        side = 180
+        fsSmall, fsMedium, fsLarge = 14, 16, 18
+    elseif mobile then
+        if w >= h then
+            -- Телефон в альбомной ориентации
+            width = math.clamp(w * 0.78, 300, 390)
+            height = math.clamp(h * 0.72, 210, 280)
+            side = 82
+        else
+            -- Телефон в портретной ориентации
+            width = math.clamp(w * 0.86, 270, 330)
+            height = math.clamp(h * 0.50, 200, 245)
+            side = 78
+        end
+
+        -- Дополнительное уменьшение на очень маленьких экранах.
+        if w < 340 then
+            scale = math.clamp(w / 340, 0.82, 1)
+        end
+
+        fsSmall, fsMedium, fsLarge = 8, 9, 11
+    elseif w < 700 then
+        width = math.min(w * 0.70, 500)
+        height = math.min(h * 0.70, 420)
+        side = 140
+        fsSmall, fsMedium, fsLarge = 12, 14, 16
+    else
+        width = math.min(w * 0.60, 700)
+        height = math.min(h * 0.60, 500)
+        side = 160
+        fsSmall, fsMedium, fsLarge = 11, 13, 16
+    end
+
+    return width, height, side, fsSmall, fsMedium, fsLarge, scale
+end
+
+local function ApplyResponsiveLayout()
+    local width, height, side, fsSmall, fsMedium, fsLarge, scale =
+        GetResponsiveMetrics()
+
+    baseWidth = width
+    baseHeight = height
+    sidebarWidth = side
+    fontSizeSmall = fsSmall
+    fontSizeMedium = fsMedium
+    fontSizeLarge = fsLarge
+
+    Main.Size = UDim2.new(0, width, 0, _G.Collapsed and 40 or height)
+    Main.Position = UDim2.new(0.5, -width / 2, 0.5, -(Main.AbsoluteSize.Y / 2))
+    MainScale.Scale = scale
+
+    if TopBar then
+        local topHeight = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+            and 34 or 40
+
+        TopBar.Size = UDim2.new(1, 0, 0, topHeight)
+    end
+
+    if TitleLabel then
+        TitleLabel.Position = UDim2.new(0, 10, 0, 0)
+        TitleLabel.Size = UDim2.new(1, -52, 1, 0)
+        TitleLabel.TextSize = fsLarge
+        TitleLabel.Text = "BLACK HOLE HUB | ArtSquadFive"
+        TitleLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    end
+
+    if CollapseBtn then
+        local buttonSize = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+            and 26 or 30
+
+        CollapseBtn.Size = UDim2.new(0, buttonSize, 0, buttonSize)
+        CollapseBtn.Position = UDim2.new(1, -buttonSize - 7, 0.5, -buttonSize / 2)
+        CollapseBtn.TextSize = (buttonSize <= 26) and 17 or 20
+    end
+
+    if Sidebar then
+        Sidebar.Position = UDim2.new(0, 7, 0, 43)
+        Sidebar.Size = UDim2.new(0, side, 1, -50)
+    end
+
+    if Container then
+        Container.Position = UDim2.new(0, side + 14, 0, 43)
+        Container.Size = UDim2.new(1, -(side + 21), 1, -50)
+    end
+
+    -- Масштабируем только содержимое Main, поэтому интерфейс остаётся компактным.
+    MainScale.Scale = scale
+end
+
+-- Пересчитываем размеры после создания всех основных элементов.
+task.defer(ApplyResponsiveLayout)
+
+-- При повороте телефона/изменении размера окна UI автоматически перестраивается.
+local boundCamera = nil
+
+local function BindCameraViewport(camera)
+    if not camera or camera == boundCamera then
+        return
+    end
+
+    boundCamera = camera
+
+    camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+        task.defer(ApplyResponsiveLayout)
+    end)
+end
+
+BindCameraViewport(Workspace.CurrentCamera)
+
+task.spawn(function()
+    while BlackHoleHub and BlackHoleHub.Parent do
+        local camera = Workspace.CurrentCamera
+
+        if camera ~= boundCamera then
+            BindCameraViewport(camera)
+            task.defer(ApplyResponsiveLayout)
+        end
+
+        task.wait(0.25)
+    end
+end)
+
 local Tabs = {}
 local function CreateTab(name)
     local TabBtn = Instance.new("TextButton", Sidebar)
@@ -492,7 +663,7 @@ local function CreateTab(name)
             TweenService:Create(tab.Btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(30, 20, 10), TextColor3 = Color3.fromRGB(200, 200, 200)}):Play()
         end
         Page.Visible = true
-        TweenService:Create(TabBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 140, 0), TextColor3 = Color3.fromRGB(0, 0, 0)}):Play()
+        TweenService:Create(TabBtn, TweenInfo.new(0.2), {BackgroundColor3 = _G.AccentColor, TextColor3 = Color3.fromRGB(0, 0, 0)}):Play()
         for _, child in ipairs(BlackHoleHub:GetChildren()) do
             if child.Name == "DropdownWindow" then child.Visible = false end
         end
@@ -522,13 +693,13 @@ local function CreateToggle(parent, text, default, callback)
     local Check = Instance.new("TextButton", Frame)
     Check.Size = UDim2.new(0, 25, 0, 25)
     Check.Position = UDim2.new(1, -35, 0.5, -12.5)
-    Check.BackgroundColor3 = default and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(20, 20, 20)
+    Check.BackgroundColor3 = default and _G.AccentColor or Color3.fromRGB(20, 20, 20)
     Check.Text = ""
     Instance.new("UICorner", Check).CornerRadius = UDim.new(0, 6)
     local state = default
     Check.MouseButton1Click:Connect(function()
         state = not state
-        TweenService:Create(Check, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(20, 20, 20)}):Play()
+        TweenService:Create(Check, TweenInfo.new(0.2), {BackgroundColor3 = state and _G.AccentColor or Color3.fromRGB(20, 20, 20)}):Play()
         pcall(callback, state)
     end)
 end
@@ -555,7 +726,7 @@ local function CreateSlider(parent, text, min, max, default, callback)
     Instance.new("UICorner", Bg).CornerRadius = UDim.new(1, 0)
     local Fill = Instance.new("Frame", Bg)
     Fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
-    Fill.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+    Fill.BackgroundColor3 = _G.AccentColor
     Instance.new("UICorner", Fill).CornerRadius = UDim.new(1, 0)
     local Btn = Instance.new("TextButton", Bg)
     Btn.Size = UDim2.new(1, 0, 1, 0)
@@ -616,7 +787,7 @@ local function CreateDropdown(parent, text, list_func, callback)
     DropList.ScrollBarThickness = 4
     Instance.new("UICorner", DropList).CornerRadius = UDim.new(0, 6)
     local stroke = Instance.new("UIStroke", DropList)
-    stroke.Color = Color3.fromRGB(255, 140, 0)
+    stroke.Color = _G.AccentColor
     stroke.Thickness = 1
     local listLayout = Instance.new("UIListLayout", DropList)
     listLayout.Padding = UDim.new(0, 2)
@@ -661,7 +832,7 @@ end
 local function CreateButton(parent, text, callback)
     local Btn = Instance.new("TextButton", parent)
     Btn.Size = UDim2.new(1, 0, 0, 35)
-    Btn.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+    Btn.BackgroundColor3 = _G.AccentColor
     Btn.Text = text
     Btn.TextColor3 = Color3.fromRGB(0, 0, 0)
     Btn.Font = Enum.Font.GothamBold
@@ -741,18 +912,54 @@ local function SpamSkills()
     end
 end
 
-local function SmoothFlyTween(targetPos)
+-- НОВЫЙ ПЛАВНЫЙ ПОЛЁТ С УДЕРЖАНИЕМ (без телепортаций)
+local function FlyToPosition(targetPos)
     local char = LocalPlayer.Character
     if not char or not char:FindFirstChild("HumanoidRootPart") then return end
     local root = char.HumanoidRootPart
-    local dist = (root.Position - targetPos).Magnitude
-    for _, v in pairs(root:GetChildren()) do
-        if v:IsA("BodyVelocity") or v:IsA("BodyPosition") or v:IsA("BodyGyro") then v:Destroy() end
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+
+    if humanoid then
+        humanoid.PlatformStand = true
     end
-    local dur = dist / _G.FarmSpeed
-    local tween = TweenService:Create(root, TweenInfo.new(dur, Enum.EasingStyle.Linear), {CFrame = CFrame.new(targetPos)})
-    tween:Play()
-    tween.Completed:Wait()
+
+    local bodyVelocity = Instance.new("BodyVelocity")
+    bodyVelocity.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    bodyVelocity.Velocity = Vector3.zero
+    bodyVelocity.Parent = root
+
+    local bodyGyro = Instance.new("BodyGyro")
+    bodyGyro.MaxForce = Vector3.new(math.huge, math.huge, math.huge)
+    bodyGyro.CFrame = root.CFrame
+    bodyGyro.Parent = root
+
+    local distance = (root.Position - targetPos).Magnitude
+    local duration = distance / _G.FarmSpeed
+    if duration < 0.1 then duration = 0.1 end
+
+    local startTime = tick()
+    local startPos = root.Position
+
+    while tick() - startTime < duration do
+        if not root or not root.Parent then break end
+        local alpha = math.min((tick() - startTime) / duration, 1)
+        local newPos = startPos:Lerp(targetPos, alpha)
+        bodyVelocity.Velocity = (newPos - root.Position) * 10
+        bodyGyro.CFrame = CFrame.lookAt(root.Position, targetPos)
+        task.wait()
+    end
+
+    root.CFrame = CFrame.new(targetPos)
+
+    bodyVelocity:Destroy()
+    bodyGyro:Destroy()
+    if humanoid then
+        humanoid.PlatformStand = false
+    end
+end
+
+local function SmoothFlyTween(targetPos)
+    FlyToPosition(targetPos)
 end
 
 local function FindNPCByName(name)
@@ -884,59 +1091,386 @@ end
 ------------------------------------------------------------------------
 local function GetQuestData()
     local lvl = 1
-    pcall(function() 
-        if LocalPlayer:FindFirstChild("Data") and LocalPlayer.Data:FindFirstChild("Level") then
-            lvl = LocalPlayer.Data.Level.Value 
+    pcall(function()
+        local data = LocalPlayer:FindFirstChild("Data")
+        local level = data and data:FindFirstChild("Level")
+        if level then
+            lvl = level.Value
         end
     end)
-    
-    local bestMatch = nil
-    local highestLvl = -1
-    
-    for qKey, qData in pairs(MainQuestTable) do
-        for index, info in ipairs(qData) do
-            if info.LevelReq <= lvl and info.LevelReq > highestLvl then
-                local tName = ""
-                local tCount = 0
-                for k, v in pairs(info.Task) do tName = k; tCount = v end
-                
-                if tCount == 1 then
-                    local enemies = Workspace:FindFirstChild("Enemies") or Workspace
-                    local bossAlive = false
-                    for _, enemy in ipairs(enemies:GetChildren()) do
-                        pcall(function()
-                            if enemy.Name == tName and enemy:FindFirstChild("Humanoid") and enemy.Humanoid.Health > 0 then
-                                bossAlive = true
-                            end
-                        end)
-                    end
-                    if bossAlive then
-                        highestLvl = info.LevelReq
-                        bestMatch = {qKey = qKey, qId = index, npcName = tName, isBoss = true}
-                    end
-                else
-                    highestLvl = info.LevelReq
-                    bestMatch = {qKey = qKey, qId = index, npcName = tName, isBoss = false}
-                end
-            end
-        end
+
+    local questTable = _G.MainQuestTable
+    if not questTable then
+        warn("❌ MainQuestTable не найдена в _G!")
+        return nil
     end
-    
-    if not bestMatch then
-        highestLvl = -1
-        for qKey, qData in pairs(MainQuestTable) do
+
+    local allQuests = {}
+
+    for qKey, qData in pairs(questTable) do
+        if type(qData) == "table" then
             for index, info in ipairs(qData) do
-                if info.LevelReq <= lvl and info.LevelReq > highestLvl then
-                    local tName = ""
-                    for k, _ in pairs(info.Task) do tName = k end
-                    highestLvl = info.LevelReq
-                    bestMatch = {qKey = qKey, qId = index, npcName = tName, isBoss = false}
+                if type(info) == "table"
+                    and tonumber(info.LevelReq)
+                    and info.LevelReq <= lvl
+                    and type(info.Task) == "table" then
+
+                    local npcName, required = nil, 0
+
+                    for name, amount in pairs(info.Task) do
+                        npcName = tostring(name)
+                        required = tonumber(amount) or 0
+                        break
+                    end
+
+                    if npcName and required > 0 then
+                        table.insert(allQuests, {
+                            qKey = qKey,
+                            qId = index,
+                            level = info.LevelReq,
+                            npcName = npcName,
+                            count = required,
+                            isBoss = (required == 1)
+                        })
+                    end
                 end
             end
         end
     end
-    
-    return bestMatch.qKey, bestMatch.qId, bestMatch.npcName, bestMatch.isBoss
+
+    if #allQuests == 0 then
+        warn("❌ Нет доступных квестов для уровня", lvl)
+        return nil
+    end
+
+    table.sort(allQuests, function(a, b)
+        if a.level == b.level then
+            return tostring(a.qKey) < tostring(b.qKey)
+        end
+        return a.level > b.level
+    end)
+
+    return allQuests[1]
+end
+
+------------------------------------------------------------------------
+-- СОСТОЯНИЕ АВТОФАРМА КВЕСТА
+------------------------------------------------------------------------
+local QuestState = {
+    Active = false,
+    QuestKey = nil,
+    QuestId = nil,
+    TargetName = nil,
+    Required = 0,
+    Kills = 0,
+    StartedAt = 0,
+    LastStart = 0,
+    LastTurnIn = 0,
+    TurnInAttempts = 0,
+    LastProgress = -1,
+    BoundMobs = {},
+}
+
+local QUEST_START_COOLDOWN = 1.25
+local QUEST_TURNIN_COOLDOWN = 1.0
+local QUEST_NO_MOB_GRACE = 2.5
+local QUEST_TURNIN_VERIFY_TIMEOUT = 3.0
+
+local function ClearQuestState()
+    QuestState.Active = false
+    QuestState.QuestKey = nil
+    QuestState.QuestId = nil
+    QuestState.TargetName = nil
+    QuestState.Required = 0
+    QuestState.Kills = 0
+    QuestState.StartedAt = 0
+    QuestState.LastProgress = -1
+    QuestState.TurnInAttempts = 0
+    QuestState.BoundMobs = {}
+    _G.CurrentRunningNPC = nil
+end
+
+local function SetQuestState(quest)
+    QuestState.Active = true
+    QuestState.QuestKey = quest.qKey
+    QuestState.QuestId = quest.qId
+    QuestState.TargetName = quest.npcName
+    QuestState.Required = quest.count
+    QuestState.Kills = 0
+    QuestState.StartedAt = os.clock()
+    QuestState.LastProgress = -1
+    QuestState.TurnInAttempts = 0
+    QuestState.BoundMobs = {}
+    _G.CurrentRunningNPC = quest.npcName
+end
+
+local function QuestStateMatches(quest)
+    return QuestState.Active
+        and QuestState.QuestKey == quest.qKey
+        and QuestState.QuestId == quest.qId
+        and QuestState.TargetName == quest.npcName
+end
+
+local function GetQuestRemote()
+    local remotes = ReplicatedStorage:FindFirstChild("Remotes")
+    return remotes and remotes:FindFirstChild("CommF_")
+end
+
+local function FindQuestFrame()
+    local playerGui = LocalPlayer:FindFirstChild("PlayerGui")
+    local main = playerGui and playerGui:FindFirstChild("Main")
+    return main and main:FindFirstChild("Quest")
+end
+
+local function GetQuestProgressFromGui(required)
+    local frame = FindQuestFrame()
+    if not frame then
+        return nil
+    end
+
+    local best = nil
+
+    for _, obj in ipairs(frame:GetDescendants()) do
+        if obj:IsA("TextLabel") or obj:IsA("TextButton") or obj:IsA("TextBox") then
+            local text = tostring(obj.Text or "")
+            if text ~= "" then
+                local a, b = text:match("(%d+)%s*/%s*(%d+)")
+                if a and b then
+                    a, b = tonumber(a), tonumber(b)
+                    if b and b > 0 and (not required or b == required) then
+                        best = math.max(best or 0, a)
+                    end
+                end
+            end
+        end
+    end
+
+    return best
+end
+
+local function IsQuestGuiVisible()
+    local frame = FindQuestFrame()
+    return frame and frame.Visible == true
+end
+
+local function IsQuestComplete()
+    if not QuestState.Active then
+        return false
+    end
+
+    local progress = GetQuestProgressFromGui(QuestState.Required)
+
+    if progress ~= nil then
+        QuestState.LastProgress = progress
+        if progress >= QuestState.Required then
+            return true
+        end
+    end
+
+    if QuestState.Kills >= QuestState.Required then
+        return true
+    end
+
+    return false
+end
+
+local function BindMobDeath(mob)
+    if not QuestState.Active or not mob or not mob:IsA("Model") then
+        return
+    end
+
+    if QuestState.BoundMobs[mob] then
+        return
+    end
+
+    local hum = mob:FindFirstChildOfClass("Humanoid")
+    if not hum then
+        return
+    end
+
+    QuestState.BoundMobs[mob] = true
+
+    hum.Died:Connect(function()
+        if not QuestState.Active then
+            return
+        end
+
+        if mob.Name ~= QuestState.TargetName then
+            return
+        end
+
+        QuestState.Kills = math.min(
+            QuestState.Required,
+            QuestState.Kills + 1
+        )
+
+        QuestState.LastProgress = math.max(
+            QuestState.LastProgress,
+            QuestState.Kills
+        )
+    end)
+end
+
+local function FindQuestEnemy(name)
+    if not name then
+        return nil
+    end
+
+    local enemiesFolder = Workspace:FindFirstChild("Enemies")
+    local searchRoot = enemiesFolder or Workspace
+
+    for _, obj in ipairs(searchRoot:GetChildren()) do
+        if obj:IsA("Model") and obj.Name == name then
+            local hum = obj:FindFirstChildOfClass("Humanoid")
+            local root = obj:FindFirstChild("HumanoidRootPart")
+
+            if hum and hum.Health > 0 and root
+                and obj ~= LocalPlayer.Character
+                and not Players:GetPlayerFromCharacter(obj) then
+                BindMobDeath(obj)
+                return obj
+            end
+        end
+    end
+
+    for _, obj in ipairs(Workspace:GetDescendants()) do
+        if obj:IsA("Model") and obj.Name == name then
+            local hum = obj:FindFirstChildOfClass("Humanoid")
+            local root = obj:FindFirstChild("HumanoidRootPart")
+
+            if hum and hum.Health > 0 and root
+                and obj ~= LocalPlayer.Character
+                and not Players:GetPlayerFromCharacter(obj) then
+                BindMobDeath(obj)
+                return obj
+            end
+        end
+    end
+
+    return nil
+end
+
+local function GetAllQuestEnemies(name)
+    local result = {}
+    if not name then
+        return result
+    end
+
+    local enemiesFolder = Workspace:FindFirstChild("Enemies")
+    local searchRoot = enemiesFolder or Workspace
+
+    for _, obj in ipairs(searchRoot:GetChildren()) do
+        if obj:IsA("Model") and obj.Name == name then
+            local hum = obj:FindFirstChildOfClass("Humanoid")
+            local root = obj:FindFirstChild("HumanoidRootPart")
+
+            if hum and hum.Health > 0 and root
+                and obj ~= LocalPlayer.Character
+                and not Players:GetPlayerFromCharacter(obj) then
+                BindMobDeath(obj)
+                table.insert(result, obj)
+            end
+        end
+    end
+
+    return result
+end
+
+local function StartQuest(quest)
+    local commF = GetQuestRemote()
+    if not commF then
+        warn("❌ CommF_ не найден!")
+        return false
+    end
+
+    if os.clock() - QuestState.LastStart < QUEST_START_COOLDOWN then
+        return false
+    end
+
+    QuestState.LastStart = os.clock()
+
+    local ok, result = pcall(function()
+        return commF:InvokeServer("StartQuest", quest.qKey, quest.qId)
+    end)
+
+    if not ok then
+        warn("❌ Ошибка StartQuest:", result)
+        return false
+    end
+
+    SetQuestState(quest)
+
+    print(string.format(
+        "📜 Взят квест: %s [%d/%d] (уровень %d)",
+        quest.npcName,
+        0,
+        quest.count,
+        quest.level
+    ))
+
+    return true
+end
+
+local function TryTurnInQuest()
+    if not QuestState.Active then
+        return false
+    end
+
+    local commF = GetQuestRemote()
+    if not commF then
+        return false
+    end
+
+    if os.clock() - QuestState.LastTurnIn < QUEST_TURNIN_COOLDOWN then
+        return false
+    end
+
+    QuestState.LastTurnIn = os.clock()
+    QuestState.TurnInAttempts = QuestState.TurnInAttempts + 1
+
+    local key = QuestState.QuestKey
+    local id = QuestState.QuestId
+
+    local ok, result = pcall(function()
+        return commF:InvokeServer("StartQuest", key, id)
+    end)
+
+    if not ok then
+        warn("⚠️ Ошибка при сдаче квеста:", result)
+        return false
+    end
+
+    task.wait(0.15)
+
+    local progress = GetQuestProgressFromGui(QuestState.Required)
+    local visible = IsQuestGuiVisible()
+
+    if not visible or (progress ~= nil and progress < QuestState.Required) then
+        print("✅ Квест выполнен и сдан:", QuestState.TargetName)
+        ClearQuestState()
+        return true
+    end
+
+    if result == true and QuestState.TurnInAttempts >= 2 then
+        print("✅ Сервер подтвердил сдачу:", QuestState.TargetName)
+        ClearQuestState()
+        return true
+    end
+
+    return false
+end
+
+local function EnsureQuest()
+    if QuestState.Active then
+        return true
+    end
+
+    local quest = GetQuestData()
+    if not quest then
+        return false
+    end
+
+    return StartQuest(quest)
 end
 
 ------------------------------------------------------------------------
@@ -945,17 +1479,26 @@ end
 local FarmTab = CreateTab("⚔️ Фарм")
 local WorldTab = CreateTab("🌍 Мир")
 local BossTab = CreateTab("👑 Рейд боссов")
-local TeleportTab = CreateTab("🚀 Телепорт")
 local SettingsTab = CreateTab("⚙️ Настройки")
+local ConfigTab = CreateTab("💾 Конфиг")
 
--- ФАРМ
-CreateToggle(FarmTab, "Включить Автофарм (с квестом)", _G.AutoFarmLevel, function(s) 
+CreateToggle(FarmTab, "Включить Автофарм (с квестом)", _G.AutoFarmLevel, function(s)
     _G.AutoFarmLevel = s
-    _G.CurrentRunningNPC = nil
     currentTarget = nil
+    if s then
+        _G.AutoHaki = true
+        _G.AutoInstinct = true
+        ClearQuestState()
+    else
+        ClearQuestState()
+    end
 end)
 CreateToggle(FarmTab, "Бить врагов в радиусе 1000", _G.KillAuraRadius, function(s) 
     _G.KillAuraRadius = s
+    if s then
+        _G.AutoHaki = true
+        _G.AutoInstinct = true
+    end
     if not s then currentTarget = nil end
 end)
 CreateToggle(FarmTab, "Авто-Спам Скиллов", _G.SpamSkills, function(s) _G.SpamSkills = s end)
@@ -965,7 +1508,6 @@ CreateSlider(FarmTab, "Дистанция атаки", 6, 50, _G.FarmDistance, f
 CreateDropdown(FarmTab, "Выбор стороны атаки", {"Сверху", "Снизу", "Со спины"}, function(v) _G.AttackSide = v end)
 CreateDropdown(FarmTab, "Выбери Оружие", GetWeapons, function(v) _G.SelectedWeapon = v end)
 
--- МИР
 CreateToggle(WorldTab, "Авто-Подбор Фруктов", _G.AutoFruitFinder, function(s) _G.AutoFruitFinder = s end)
 CreateToggle(WorldTab, "Магнит Сундуков (Умный)", _G.AutoChestSteal, function(s) _G.AutoChestSteal = s end)
 
@@ -1021,7 +1563,7 @@ DropList.ZIndex = 300
 DropList.ScrollBarThickness = 4
 Instance.new("UICorner", DropList).CornerRadius = UDim.new(0, 6)
 local stroke2 = Instance.new("UIStroke", DropList)
-stroke2.Color = Color3.fromRGB(255, 140, 0)
+stroke2.Color = _G.AccentColor
 stroke2.Thickness = 1
 local listLayout2 = Instance.new("UIListLayout", DropList)
 listLayout2.Padding = UDim.new(0, 2)
@@ -1100,7 +1642,7 @@ ButtonRow1.BackgroundTransparency = 1
 local BtnFly = Instance.new("TextButton", ButtonRow1)
 BtnFly.Size = UDim2.new(0.48, 0, 1, 0)
 BtnFly.Position = UDim2.new(0, 0, 0, 0)
-BtnFly.BackgroundColor3 = Color3.fromRGB(255, 140, 0)
+BtnFly.BackgroundColor3 = _G.AccentColor
 BtnFly.Text = "Лететь за боссом"
 BtnFly.TextColor3 = Color3.fromRGB(0, 0, 0)
 BtnFly.Font = Enum.Font.GothamBold
@@ -1155,13 +1697,13 @@ local function CreateToggleInline(parent, text, default, callback)
     local Check = Instance.new("TextButton", Frame)
     Check.Size = UDim2.new(0, 25, 0, 25)
     Check.Position = UDim2.new(1, -35, 0.5, -12.5)
-    Check.BackgroundColor3 = default and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(20, 20, 20)
+    Check.BackgroundColor3 = default and _G.AccentColor or Color3.fromRGB(20, 20, 20)
     Check.Text = ""
     Instance.new("UICorner", Check).CornerRadius = UDim.new(0, 6)
     local state = default
     Check.MouseButton1Click:Connect(function()
         state = not state
-        TweenService:Create(Check, TweenInfo.new(0.2), {BackgroundColor3 = state and Color3.fromRGB(255, 140, 0) or Color3.fromRGB(20, 20, 20)}):Play()
+        TweenService:Create(Check, TweenInfo.new(0.2), {BackgroundColor3 = state and _G.AccentColor or Color3.fromRGB(20, 20, 20)}):Play()
         pcall(callback, state)
     end)
 end
@@ -1172,6 +1714,10 @@ ToggleRow.Position = UDim2.new(0, 0, 0, 130)
 ToggleRow.BackgroundTransparency = 1
 CreateToggleInline(ToggleRow, "Авто-фарм босса", false, function(s)
     _G.BossFarmEnabled = s
+    if s then
+        _G.AutoHaki = true
+        _G.AutoInstinct = true
+    end
     if not s then
         if _G.BossFarmTarget and currentTarget and currentTarget.Name == _G.BossFarmTarget then
             currentTarget = nil
@@ -1182,7 +1728,7 @@ CreateToggleInline(ToggleRow, "Авто-фарм босса", false, function(s)
     end
 end)
 
--- ====== МОРСКИЕ СОБЫТИЯ ======
+-- МОРСКИЕ СОБЫТИЯ
 local SeaEventsSeparator = Instance.new("Frame", BossTab)
 SeaEventsSeparator.Size = UDim2.new(1, 0, 0, 10)
 SeaEventsSeparator.BackgroundTransparency = 1
@@ -1191,145 +1737,24 @@ local SeaEventsLabel = Instance.new("TextLabel", BossTab)
 SeaEventsLabel.Size = UDim2.new(1, 0, 0, 30)
 SeaEventsLabel.BackgroundTransparency = 1
 SeaEventsLabel.Text = "🌊 Морские события"
-SeaEventsLabel.TextColor3 = Color3.fromRGB(255, 140, 0)
+SeaEventsLabel.TextColor3 = _G.AccentColor
 SeaEventsLabel.Font = Enum.Font.GothamBold
 SeaEventsLabel.TextSize = fontSizeMedium
 SeaEventsLabel.TextXAlignment = Enum.TextXAlignment.Left
 
-CreateToggleInline(BossTab, "Фарм Sea Beast", _G.SeaBeastFarm, function(s)
-    _G.SeaBeastFarm = s
-    if not s then _G.SeaBeastTarget = nil end
-end)
-
-CreateToggleInline(BossTab, "Фарм Leviathan", _G.LeviathanFarm, function(s)
-    _G.LeviathanFarm = s
-end)
-
-CreateToggleInline(BossTab, "Фарм Terrorshark", _G.TerrorsharkFarm, function(s)
-    _G.TerrorsharkFarm = s
-end)
-
-CreateToggleInline(BossTab, "Фарм Hydra", _G.HydraFarm, function(s)
-    _G.HydraFarm = s
-end)
-
-CreateToggleInline(BossTab, "Фарм Ghost Ship", _G.GhostShipFarm, function(s)
-    _G.GhostShipFarm = s
-end)
-
-CreateToggleInline(BossTab, "Фарм Piranha", _G.PiranhaFarm, function(s)
-    _G.PiranhaFarm = s
-end)
+CreateToggleInline(BossTab, "Фарм Sea Beast", _G.SeaBeastFarm, function(s) _G.SeaBeastFarm = s end)
+CreateToggleInline(BossTab, "Фарм Leviathan", _G.LeviathanFarm, function(s) _G.LeviathanFarm = s end)
+CreateToggleInline(BossTab, "Фарм Terrorshark", _G.TerrorsharkFarm, function(s) _G.TerrorsharkFarm = s end)
+CreateToggleInline(BossTab, "Фарм Hydra", _G.HydraFarm, function(s) _G.HydraFarm = s end)
+CreateToggleInline(BossTab, "Фарм Ghost Ship", _G.GhostShipFarm, function(s) _G.GhostShipFarm = s end)
+CreateToggleInline(BossTab, "Фарм Piranha", _G.PiranhaFarm, function(s) _G.PiranhaFarm = s end)
 
 CreateSlider(BossTab, "Скорость полёта (Sea Events)", 100, 350, _G.SeaEventFlySpeed, function(v) _G.SeaEventFlySpeed = v end)
 CreateSlider(BossTab, "Высота над событием", 50, 150, _G.SeaEventHoverHeight, function(v) _G.SeaEventHoverHeight = v end)
 
--- ====== ТЕЛЕПОРТ ======
-local TeleportPage = TeleportTab
-
-local function CreateLocationGroup(parent, seaName, locations)
-    local GroupFrame = Instance.new("Frame", parent)
-    GroupFrame.Size = UDim2.new(1, 0, 0, 35)
-    GroupFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-    GroupFrame.BackgroundTransparency = 0.5
-    Instance.new("UICorner", GroupFrame).CornerRadius = UDim.new(0, 6)
-    GroupFrame.ClipsDescendants = true
-
-    local ToggleBtn = Instance.new("TextButton", GroupFrame)
-    ToggleBtn.Size = UDim2.new(1, 0, 1, 0)
-    ToggleBtn.BackgroundTransparency = 1
-    ToggleBtn.Text = "▼ " .. seaName
-    ToggleBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-    ToggleBtn.Font = Enum.Font.GothamBold
-    ToggleBtn.TextSize = fontSizeMedium
-    ToggleBtn.TextXAlignment = Enum.TextXAlignment.Left
-
-    local Content = Instance.new("Frame", GroupFrame)
-    Content.Size = UDim2.new(1, 0, 0, 0)
-    Content.Position = UDim2.new(0, 0, 0, 35)
-    Content.BackgroundTransparency = 1
-    Content.Visible = false
-    Content.ClipsDescendants = true
-
-    local ContentLayout = Instance.new("UIListLayout", Content)
-    ContentLayout.Padding = UDim.new(0, 4)
-
-    local expanded = false
-
-    ToggleBtn.MouseButton1Click:Connect(function()
-        expanded = not expanded
-        if expanded then
-            ToggleBtn.Text = "▼ " .. seaName
-            Content.Visible = true
-            local count = #locations
-            local contentHeight = count * 35 + (count - 1) * 4
-            Content.Size = UDim2.new(1, 0, 0, contentHeight)
-            GroupFrame.Size = UDim2.new(1, 0, 0, 35 + contentHeight)
-        else
-            ToggleBtn.Text = "▶ " .. seaName
-            Content.Visible = false
-            Content.Size = UDim2.new(1, 0, 0, 0)
-            GroupFrame.Size = UDim2.new(1, 0, 0, 35)
-        end
-        local parentPage = parent:FindFirstAncestorOfClass("ScrollingFrame")
-        if parentPage then
-            parentPage.CanvasSize = UDim2.new(0, 0, 0, parent.AbsoluteSize.Y + 20)
-        end
-    end)
-
-    for _, loc in ipairs(locations) do
-        local locName = loc[1]
-        local x, y, z = loc[2], loc[3], loc[4]
-        local Btn = Instance.new("TextButton", Content)
-        Btn.Size = UDim2.new(1, -10, 0, 30)
-        Btn.Position = UDim2.new(0, 5, 0, 0)
-        Btn.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-        Btn.Text = locName
-        Btn.TextColor3 = Color3.fromRGB(255, 255, 255)
-        Btn.Font = Enum.Font.GothamSemibold
-        Btn.TextSize = fontSizeMedium
-        Instance.new("UICorner", Btn).CornerRadius = UDim.new(0, 4)
-        Btn.MouseButton1Click:Connect(function()
-            local targetPos = Vector3.new(x, y, z)
-            local char = LocalPlayer.Character
-            if char and char:FindFirstChild("HumanoidRootPart") then
-                SmoothFlyTween(targetPos)
-            end
-        end)
-    end
-
-    return GroupFrame
-end
-
-local TeleportContainer = Instance.new("Frame", TeleportPage)
-TeleportContainer.Size = UDim2.new(1, 0, 1, 0)
-TeleportContainer.BackgroundTransparency = 1
-
-local TeleportLayout = Instance.new("UIListLayout", TeleportContainer)
-TeleportLayout.Padding = UDim.new(0, 8)
-
-CreateLocationGroup(TeleportContainer, "Sea 1", TeleportLocations["Sea 1"])
-CreateLocationGroup(TeleportContainer, "Sea 2", TeleportLocations["Sea 2"])
-CreateLocationGroup(TeleportContainer, "Sea 3", TeleportLocations["Sea 3"])
-
-TeleportContainer:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-    TeleportPage.CanvasSize = UDim2.new(0, 0, 0, TeleportContainer.AbsoluteSize.Y + 20)
-end)
-
-TeleportPage:GetPropertyChangedSignal("Visible"):Connect(function()
-    if TeleportPage.Visible then
-        task.wait(0.1)
-        TeleportPage.CanvasSize = UDim2.new(0, 0, 0, TeleportContainer.AbsoluteSize.Y + 20)
-    end
-end)
-
-------------------------------------------------------------------------
 -- НАСТРОЙКИ
-------------------------------------------------------------------------
 CreateSlider(SettingsTab, "Скорость Полета (Автофарм)", 100, 450, _G.FarmSpeed, function(v) _G.FarmSpeed = v end)
-CreateSlider(SettingsTab, "Интервал кликов (мс)", 5, 200, _G.ClickInterval, function(v) 
-    _G.ClickInterval = v 
-end)
+CreateSlider(SettingsTab, "Интервал кликов (мс)", 5, 200, _G.ClickInterval, function(v) _G.ClickInterval = v end)
 CreateToggle(SettingsTab, "Noclip (Сквозь Стены)", _G.Noclip, function(s) _G.Noclip = s end)
 CreateToggle(SettingsTab, "Бесконечные Прыжки", _G.InfJump, function(s) _G.InfJump = s end)
 CreateToggle(SettingsTab, "Включить Полет (Fly)", _G.FlyEnabled, function(s) _G.FlyEnabled = s end)
@@ -1355,22 +1780,335 @@ CreateToggle(SettingsTab, "FullBright (Яркость)", _G.FullBrightEnabled, f
     end
 end)
 
+-- Выбор темы
+CreateDropdown(SettingsTab, "Тема интерфейса", function()
+    local themeNames = {}
+    for name, _ in pairs(Themes) do
+        table.insert(themeNames, name)
+    end
+    table.sort(themeNames)
+    return themeNames
+end, function(selectedTheme)
+    _G.Theme = selectedTheme
+    ApplyTheme(selectedTheme)
+end)
+
+-- ФУНКЦИЯ ApplyTheme (должна быть определена до использования)
+function ApplyTheme(themeName)
+    local newAccent = Themes[themeName]
+    if not newAccent then return end
+    local oldAccent = _G.AccentColor
+    _G.AccentColor = newAccent
+
+    local function updateElement(element)
+        pcall(function()
+            if element:IsA("GuiObject") then
+                if element.BackgroundColor3 == oldAccent then
+                    element.BackgroundColor3 = newAccent
+                end
+                if element.TextColor3 == oldAccent then
+                    element.TextColor3 = newAccent
+                end
+            elseif element:IsA("UIStroke") then
+                if element.Color == oldAccent then
+                    element.Color = newAccent
+                end
+            end
+        end)
+    end
+
+    local function traverse(parent)
+        for _, child in ipairs(parent:GetChildren()) do
+            updateElement(child)
+            traverse(child)
+        end
+    end
+    traverse(BlackHoleHub)
+end
+
+-- КОНФИГ (с выпадающим списком)
+local ConfigNameBox = Instance.new("TextBox")
+ConfigNameBox.Size = UDim2.new(1, -20, 0, 40)
+ConfigNameBox.Position = UDim2.new(0, 10, 0, 10)
+ConfigNameBox.PlaceholderText = "Введите название конфига"
+ConfigNameBox.Text = "default"
+ConfigNameBox.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+ConfigNameBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+ConfigNameBox.Font = Enum.Font.GothamSemibold
+ConfigNameBox.TextSize = fontSizeMedium
+ConfigNameBox.Parent = ConfigTab
+
+local SaveButton = Instance.new("TextButton")
+SaveButton.Size = UDim2.new(1, -20, 0, 40)
+SaveButton.Position = UDim2.new(0, 10, 0, 60)
+SaveButton.BackgroundColor3 = _G.AccentColor
+SaveButton.Text = "💾 Сохранить конфиг"
+SaveButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+SaveButton.Font = Enum.Font.GothamBold
+SaveButton.TextSize = fontSizeMedium
+SaveButton.Parent = ConfigTab
+Instance.new("UICorner", SaveButton).CornerRadius = UDim.new(0, 6)
+
+local LoadButton = Instance.new("TextButton")
+LoadButton.Size = UDim2.new(1, -20, 0, 40)
+LoadButton.Position = UDim2.new(0, 10, 0, 110)
+LoadButton.BackgroundColor3 = _G.AccentColor
+LoadButton.Text = "📂 Загрузить конфиг"
+LoadButton.TextColor3 = Color3.fromRGB(0, 0, 0)
+LoadButton.Font = Enum.Font.GothamBold
+LoadButton.TextSize = fontSizeMedium
+LoadButton.Parent = ConfigTab
+Instance.new("UICorner", LoadButton).CornerRadius = UDim.new(0, 6)
+
+local function SaveConfig()
+    local configName = ConfigNameBox.Text or "default"
+    if configName == "" then configName = "default" end
+    local configData = {
+        AutoFarmLevel = _G.AutoFarmLevel,
+        KillAuraRadius = _G.KillAuraRadius,
+        SpamSkills = _G.SpamSkills,
+        AutoHaki = _G.AutoHaki,
+        AutoInstinct = _G.AutoInstinct,
+        FarmDistance = _G.FarmDistance,
+        FarmSpeed = _G.FarmSpeed,
+        AttackSide = _G.AttackSide,
+        SelectedWeapon = _G.SelectedWeapon,
+        AutoFruitFinder = _G.AutoFruitFinder,
+        AutoChestSteal = _G.AutoChestSteal,
+        ClickInterval = _G.ClickInterval,
+        SeaBeastFarm = _G.SeaBeastFarm,
+        LeviathanFarm = _G.LeviathanFarm,
+        TerrorsharkFarm = _G.TerrorsharkFarm,
+        HydraFarm = _G.HydraFarm,
+        GhostShipFarm = _G.GhostShipFarm,
+        PiranhaFarm = _G.PiranhaFarm,
+        SeaEventFlySpeed = _G.SeaEventFlySpeed,
+        SeaEventHoverHeight = _G.SeaEventHoverHeight,
+        FullBrightEnabled = _G.FullBrightEnabled,
+        Noclip = _G.Noclip,
+        InfJump = _G.InfJump,
+        WalkSpeedEnabled = _G.WalkSpeedEnabled,
+        WalkSpeed = _G.WalkSpeed,
+        JumpPowerEnabled = _G.JumpPowerEnabled,
+        JumpPower = _G.JumpPower,
+        FlyEnabled = _G.FlyEnabled,
+        FlySpeed = _G.FlySpeed,
+        Theme = _G.Theme,
+    }
+    local jsonData = HttpService:JSONEncode(configData)
+    if writefile then
+        local folder = "BlackHoleHub-Config-"
+        if not isfolder(folder) then
+            makefolder(folder)
+        end
+        local filePath = folder .. "/" .. configName .. ".json"
+        writefile(filePath, jsonData)
+        print("✅ Конфиг сохранён в " .. filePath)
+    else
+        warn("⚠️ Функция writefile недоступна. Сохранение невозможно.")
+    end
+end
+SaveButton.MouseButton1Click:Connect(SaveConfig)
+
+local function LoadConfig()
+    local configName = ConfigNameBox.Text or "default"
+    if configName == "" then configName = "default" end
+    if readfile then
+        local folder = "BlackHoleHub-Config-"
+        local filePath = folder .. "/" .. configName .. ".json"
+        if isfile(filePath) then
+            local success, result = pcall(function()
+                return HttpService:JSONDecode(readfile(filePath))
+            end)
+            if success and type(result) == "table" then
+                for key, value in pairs(result) do
+                    if _G[key] ~= nil then
+                        _G[key] = value
+                    end
+                end
+                print("✅ Конфиг загружен: " .. configName)
+                ApplyTheme(_G.Theme)
+            else
+                warn("⚠️ Не удалось разобрать конфиг.")
+            end
+        else
+            warn("⚠️ Конфиг не найден: " .. filePath)
+        end
+    else
+        warn("⚠️ Функция readfile недоступна.")
+    end
+end
+LoadButton.MouseButton1Click:Connect(LoadConfig)
+
+-- Выпадающий список конфигов
+CreateDropdown(ConfigTab, "Существующие конфиги", function()
+    local files = {}
+    if listfiles then
+        local folder = "BlackHoleHub-Config-"
+        if isfolder(folder) then
+            for _, file in ipairs(listfiles(folder)) do
+                if file:sub(-5) == ".json" then
+                    local name = file:match("([^/]+)%.json$")
+                    if name then table.insert(files, name) end
+                end
+            end
+        end
+    end
+    if #files == 0 then table.insert(files, "Нет конфигов") end
+    return files
+end, function(selected)
+    if selected ~= "Нет конфигов" then
+        ConfigNameBox.Text = selected
+    end
+end)
+
+------------------------------------------------------------------------
+-- ESP ДЛЯ ФРУКТОВ И СУНДУКОВ
+------------------------------------------------------------------------
+local function createESP(text, color)
+    if not Drawing then return nil end
+    local esp = Drawing.new("Text")
+    esp.Text = text
+    esp.Color = color or Color3.fromRGB(255, 255, 255)
+    esp.Size = 14
+    esp.Center = true
+    esp.Outline = true
+    esp.Visible = false
+    return esp
+end
+
+local fruitESP = createESP("Фрукт: 0м", Color3.fromRGB(255, 200, 0))
+local chestESP = createESP("Сундук: 0м", Color3.fromRGB(0, 200, 255))
+
+RunService.RenderStepped:Connect(function()
+    local char = LocalPlayer.Character
+    local root = char and char:FindFirstChild("HumanoidRootPart")
+    if not root then
+        if fruitESP then fruitESP.Visible = false end
+        if chestESP then chestESP.Visible = false end
+        return
+    end
+
+    if _G.AutoFruitFinder then
+        local nearestFruit = nil
+        local nearestDist = math.huge
+        for _, obj in ipairs(Workspace:GetDescendants()) do
+            if obj:IsA("Tool") and obj:FindFirstChild("Handle") and (obj.Name:lower():find("fruit") or obj.Name:lower():find("devil")) then
+                local dist = (root.Position - obj.Handle.Position).Magnitude
+                if dist < nearestDist then
+                    nearestDist = dist
+                    nearestFruit = obj
+                end
+            end
+        end
+        if nearestFruit then
+            fruitESP.Text = string.format("🍎 Фрукт: %.0fм", nearestDist)
+            fruitESP.Position = Workspace.CurrentCamera:WorldToScreenPoint(nearestFruit.Handle.Position)
+            fruitESP.Visible = true
+        else
+            fruitESP.Visible = false
+        end
+    else
+        fruitESP.Visible = false
+    end
+
+    if _G.AutoChestSteal then
+        local nearestChest = nil
+        local nearestDist = math.huge
+        local chestsFolder = Workspace:FindFirstChild("ChestModels")
+        local searchList = chestsFolder and chestsFolder:GetChildren() or {}
+        for _, chest in ipairs(searchList) do
+            if chest:IsA("Model") and chest:FindFirstChildWhichIsA("BasePart") then
+                local part = chest:FindFirstChildWhichIsA("BasePart")
+                local dist = (root.Position - part.Position).Magnitude
+                if dist < nearestDist then
+                    nearestDist = dist
+                    nearestChest = part
+                end
+            end
+        end
+        if nearestChest then
+            chestESP.Text = string.format("📦 Сундук: %.0fм", nearestDist)
+            chestESP.Position = Workspace.CurrentCamera:WorldToScreenPoint(nearestChest.Position)
+            chestESP.Visible = true
+        else
+            chestESP.Visible = false
+        end
+    else
+        chestESP.Visible = false
+    end
+end)
+
 ------------------------------------------------------------------------
 -- ГЛАВНЫЙ ЦИКЛ ФАРМА
+-- Buso Haki: включается 1 раз после включения AutoHaki
+-- Instinct: переключается каждые 5 секунд
+-- Мобильный ввод: те же key events используются на телефоне
 ------------------------------------------------------------------------
+
 task.spawn(function()
+    local lastInstinctPress = 0
+    local hakiActivated = false
+    local noMobSince = 0
+
     while task.wait(0.1) do
+
         local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") or not char:FindFirstChild("Humanoid") or char.Humanoid.Health <= 0 then
+        local humanoid = char and char:FindFirstChildOfClass("Humanoid")
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+
+        if not char or not root or not humanoid or humanoid.Health <= 0 then
             currentTarget = nil
             task.wait(0.5)
             continue
         end
 
-        -- 1. БОСС
+        ----------------------------------------------------------------
+        -- BUSO HAKI
+        -- J нажимается только один раз за одно включение AutoHaki.
+        ----------------------------------------------------------------
+        if _G.AutoHaki then
+            if not hakiActivated then
+                pcall(function()
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.J, false, game)
+                    task.wait(0.1)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.J, false, game)
+                end)
+
+                hakiActivated = true
+                print("🔴 Buso Haki включён")
+            end
+        else
+            -- После выключения разрешаем одно новое нажатие J.
+            hakiActivated = false
+        end
+
+        ----------------------------------------------------------------
+        -- KEN HAKI / INSTINCT
+        -- E: включить -> 5 секунд -> выключить -> 5 секунд -> включить...
+        ----------------------------------------------------------------
+        if _G.AutoInstinct then
+            if os.clock() - lastInstinctPress >= 5 then
+                pcall(function()
+                    VirtualInputManager:SendKeyEvent(true, Enum.KeyCode.E, false, game)
+                    task.wait(0.1)
+                    VirtualInputManager:SendKeyEvent(false, Enum.KeyCode.E, false, game)
+                end)
+
+                lastInstinctPress = os.clock()
+                print("🔵 Переключён Ken Haki / Instinct")
+            end
+        else
+            lastInstinctPress = 0
+        end
+
+        ----------------------------------------------------------------
+        -- БОСС
+        ----------------------------------------------------------------
         if _G.BossFarmEnabled and _G.BossFarmTarget then
             pcall(function()
                 local boss = FindNPCByName(_G.BossFarmTarget)
+
                 if not boss then
                     local spawnPos = BossSpawnLocations[_G.BossFarmTarget]
                     if spawnPos then
@@ -1379,23 +2117,48 @@ task.spawn(function()
                         boss = FindNPCByName(_G.BossFarmTarget)
                     end
                 end
+
                 if boss then
                     currentTarget = boss
                     EquipWeapon()
-                    while boss and boss.Parent and boss:FindFirstChild("Humanoid") and boss.Humanoid.Health > 0 and _G.BossFarmEnabled do
-                        if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character.Humanoid.Health <= 0 then break end
+
+                    while boss
+                        and boss.Parent
+                        and boss:FindFirstChildOfClass("Humanoid")
+                        and boss:FindFirstChild("HumanoidRootPart")
+                        and boss:FindFirstChildOfClass("Humanoid").Health > 0
+                        and _G.BossFarmEnabled do
+
+                        local currentChar = LocalPlayer.Character
+                        local currentHumanoid = currentChar
+                            and currentChar:FindFirstChildOfClass("Humanoid")
+                        local currentRoot = currentChar
+                            and currentChar:FindFirstChild("HumanoidRootPart")
+
+                        if not currentChar
+                            or not currentRoot
+                            or not currentHumanoid
+                            or currentHumanoid.Health <= 0 then
+                            break
+                        end
+
                         EquipWeapon()
                         ClickAttack()
                         SpamSkills()
-                        task.wait(_G.ClickInterval / 1000)
+
+                        task.wait((_G.ClickInterval or 100) / 1000)
                     end
+
                     currentTarget = nil
                 end
             end)
+
             continue
         end
 
-        -- 2. МОРСКИЕ СОБЫТИЯ
+        ----------------------------------------------------------------
+        -- МОРСКИЕ СОБЫТИЯ
+        ----------------------------------------------------------------
         if _G.SeaBeastFarm then FarmSeaEvent("SeaBeast") end
         if _G.LeviathanFarm then FarmSeaEvent("Leviathan") end
         if _G.TerrorsharkFarm then FarmSeaEvent("Terrorshark") end
@@ -1403,124 +2166,227 @@ task.spawn(function()
         if _G.GhostShipFarm then FarmSeaEvent("Ghost Ship") end
         if _G.PiranhaFarm then FarmSeaEvent("Piranha") end
 
-        -- 3. KILLAURA
-        if _G.KillAuraRadius then
-            pcall(function()
-                local myPos = char.HumanoidRootPart.Position
-                local enemies = Workspace:FindFirstChild("Enemies") or Workspace
-                local nearest = nil
-                local minDist = 1001
-                for _, child in ipairs(enemies:GetChildren()) do
-                    pcall(function()
-                        if child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
-                            local dist = (myPos - child.HumanoidRootPart.Position).Magnitude
-                            if dist <= 1000 and dist < minDist then
-                                minDist = dist
-                                nearest = child
-                            end
-                        end
-                    end)
-                end
-
-                if nearest then
-                    currentTarget = nearest
-                    EquipWeapon()
-                    while nearest and nearest.Parent and nearest:FindFirstChild("Humanoid") and nearest.Humanoid.Health > 0 and _G.KillAuraRadius do
-                        if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character.Humanoid.Health <= 0 then break end
-                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - nearest.HumanoidRootPart.Position).Magnitude
-                        if dist > 1000 then break end
-                        EquipWeapon()
-                        ClickAttack()
-                        SpamSkills()
-                        task.wait(_G.ClickInterval / 1000)
-                    end
-                    currentTarget = nil
-                end
-            end)
-            continue
-        end
-
-        -- 4. АВТОФАРМ КВЕСТОВ
+        ----------------------------------------------------------------
+        -- АВТОФАРМ КВЕСТОВ
+        ----------------------------------------------------------------
         if _G.AutoFarmLevel then
             pcall(function()
-                local qKey, qId, npcName, isBoss = GetQuestData()
-                if not npcName then return end
+                if not QuestState.Active then
+                    EnsureQuest()
+                    noMobSince = 0
+                    task.wait(0.1)
+                    return
+                end
 
-                local mainGui = LocalPlayer.PlayerGui:FindFirstChild("Main")
-                if not mainGui or not mainGui:FindFirstChild("Quest") then return end
+                local progress = GetQuestProgressFromGui(QuestState.Required)
 
-                if _G.CurrentRunningNPC ~= npcName then
-                    local remotes = ReplicatedStorage:FindFirstChild("Remotes")
-                    if remotes and remotes:FindFirstChild("CommF_") then
-                        remotes.CommF_:InvokeServer("StartQuest", qKey, qId)
+                if progress ~= nil then
+                    QuestState.LastProgress = progress
+
+                    if progress > QuestState.Kills then
+                        QuestState.Kills = math.min(progress, QuestState.Required)
                     end
-                    _G.CurrentRunningNPC = npcName
-                    task.wait(0.5)
+                end
+
+                if IsQuestComplete() then
+                    currentTarget = nil
+
+                    if TryTurnInQuest() then
+                        noMobSince = 0
+                        task.wait(0.25)
+                    else
+                        task.wait(0.5)
+                    end
+
                     return
                 end
 
-                if not mainGui.Quest.Visible then
-                    _G.CurrentRunningNPC = nil
-                    task.wait(0.5)
-                    return
-                end
+                local target = FindQuestEnemy(QuestState.TargetName)
 
-                local enemies = Workspace:FindFirstChild("Enemies") or Workspace
-                local myPos = char.HumanoidRootPart.Position
-                local nearest = nil
-                local minDist = math.huge
-                for _, child in ipairs(enemies:GetChildren()) do
-                    pcall(function()
-                        if child.Name == npcName and child:FindFirstChild("Humanoid") and child.Humanoid.Health > 0 and child:FindFirstChild("HumanoidRootPart") then
-                            local dist = (myPos - child.HumanoidRootPart.Position).Magnitude
-                            if dist < minDist then
-                                minDist = dist
-                                nearest = child
+                if target then
+                    noMobSince = 0
+                    currentTarget = target
+
+                    local targetRoot = target:FindFirstChild("HumanoidRootPart")
+                    local currentRoot = LocalPlayer.Character
+                        and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+
+                    if targetRoot and currentRoot then
+                        local dist = (currentRoot.Position - targetRoot.Position).Magnitude
+
+                        if dist > _G.FarmDistance + 5 then
+                            SmoothFlyTween(targetRoot.Position)
+                        end
+                    end
+
+                    EquipWeapon()
+
+                    while target
+                        and target.Parent
+                        and target:FindFirstChildOfClass("Humanoid")
+                        and target:FindFirstChild("HumanoidRootPart")
+                        and target:FindFirstChildOfClass("Humanoid").Health > 0
+                        and _G.AutoFarmLevel
+                        and QuestState.Active do
+
+                        local currentChar = LocalPlayer.Character
+                        local currentHumanoid = currentChar
+                            and currentChar:FindFirstChildOfClass("Humanoid")
+                        local currentRoot = currentChar
+                            and currentChar:FindFirstChild("HumanoidRootPart")
+
+                        if not currentChar
+                            or not currentRoot
+                            or not currentHumanoid
+                            or currentHumanoid.Health <= 0 then
+                            break
+                        end
+
+                        local liveProgress = GetQuestProgressFromGui(QuestState.Required)
+
+                        if liveProgress ~= nil then
+                            QuestState.LastProgress = liveProgress
+
+                            if liveProgress > QuestState.Kills then
+                                QuestState.Kills = math.min(
+                                    liveProgress,
+                                    QuestState.Required
+                                )
+                            end
+
+                            if liveProgress >= QuestState.Required then
+                                break
                             end
                         end
-                    end)
-                end
-                currentTarget = nearest
 
-                if nearest then
-                    EquipWeapon()
-                    while nearest and nearest.Parent and nearest:FindFirstChild("Humanoid") and nearest.Humanoid.Health > 0 and _G.AutoFarmLevel do
-                        if not LocalPlayer.Character or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart") or LocalPlayer.Character.Humanoid.Health <= 0 then break end
-                        local checkKey, checkId, checkNpc = GetQuestData()
-                        if checkNpc ~= npcName then break end
+                        BindMobDeath(target)
                         EquipWeapon()
                         ClickAttack()
                         SpamSkills()
-                        task.wait(_G.ClickInterval / 1000)
+
+                        task.wait((_G.ClickInterval or 100) / 1000)
                     end
+
                     currentTarget = nil
-                else
-                    local enemySpawn = nil
-                    pcall(function()
-                        if Workspace:FindFirstChild("_WorldOrigin") and Workspace._WorldOrigin:FindFirstChild("EnemySpawns") then
-                            enemySpawn = Workspace._WorldOrigin.EnemySpawns:FindFirstChild(npcName)
-                        end
-                    end)
-                    if enemySpawn then
-                        local spawnPos = enemySpawn.Position + Vector3.new(0, 2, 0)
-                        if (char.HumanoidRootPart.Position - spawnPos).Magnitude > 5 then
-                            SmoothFlyTween(spawnPos)
-                            task.wait(0.2)
-                        else
-                            char.HumanoidRootPart.CFrame = CFrame.new(spawnPos)
-                        end
-                    end
+                    return
                 end
+
+                if noMobSince == 0 then
+                    noMobSince = os.clock()
+                end
+
+                if IsQuestComplete() then
+                    currentTarget = nil
+                    TryTurnInQuest()
+                    return
+                end
+
+                if os.clock() - noMobSince < QUEST_NO_MOB_GRACE then
+                    task.wait(0.2)
+                    return
+                end
+
+                task.wait(0.3)
             end)
+
             continue
         end
 
+        if QuestState.Active then
+            ClearQuestState()
+        end
+
+        currentTarget = nil
         task.wait(0.5)
     end
 end)
 
 ------------------------------------------------------------------------
--- УМНЫЕ ФРУКТЫ И СУНДУКИ
+-- ОТДЕЛЬНЫЙ ПОТОК ДЛЯ KILL AURA (не отключается)
+------------------------------------------------------------------------
+task.spawn(function()
+    local killAuraTarget = nil
+    while task.wait(0.2) do
+        if not _G.KillAuraRadius then
+            killAuraTarget = nil
+            continue
+        end
+
+        local char = LocalPlayer.Character
+        local root = char and char:FindFirstChild("HumanoidRootPart")
+        local hum = char and char:FindFirstChildOfClass("Humanoid")
+        if not root or not hum or hum.Health <= 0 or _G.GUIOpen then
+            killAuraTarget = nil
+            continue
+        end
+
+        -- Если основной цикл занят квестовым таргетом, пропускаем
+        if currentTarget and QuestState.Active and currentTarget.Name == QuestState.TargetName then
+            killAuraTarget = nil
+            continue
+        end
+
+        -- Ищем ближайшего врага в радиусе 1000, исключая текущего квестового таргета
+        local myPos = root.Position
+        local enemies = Workspace:FindFirstChild("Enemies") or Workspace
+        local nearest = nil
+        local minDist = 1001
+
+        for _, child in ipairs(enemies:GetChildren()) do
+            pcall(function()
+                local enemyHum = child:FindFirstChildOfClass("Humanoid")
+                local enemyRoot = child:FindFirstChild("HumanoidRootPart")
+                if child:IsA("Model") and enemyHum and enemyHum.Health > 0 and enemyRoot then
+                    local dist = (myPos - enemyRoot.Position).Magnitude
+                    if dist <= 1000 and dist < minDist then
+                        if not (currentTarget and child == currentTarget) then
+                            minDist = dist
+                            nearest = child
+                        end
+                    end
+                end
+            end)
+        end
+
+        if nearest then
+            killAuraTarget = nearest
+            EquipWeapon()
+
+            local targetRoot = nearest:FindFirstChild("HumanoidRootPart")
+            if targetRoot then
+                local dist = (root.Position - targetRoot.Position).Magnitude
+                if dist > _G.FarmDistance + 5 then
+                    FlyToPosition(targetRoot.Position)
+                end
+            end
+
+            while killAuraTarget
+                and killAuraTarget.Parent
+                and killAuraTarget:FindFirstChildOfClass("Humanoid")
+                and killAuraTarget:FindFirstChild("HumanoidRootPart")
+                and killAuraTarget:FindFirstChildOfClass("Humanoid").Health > 0
+                and _G.KillAuraRadius do
+
+                if not LocalPlayer.Character
+                    or not LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+                    or not LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+                    or LocalPlayer.Character:FindFirstChildOfClass("Humanoid").Health <= 0 then
+                    break
+                end
+
+                EquipWeapon()
+                ClickAttack()
+                SpamSkills()
+                task.wait(_G.ClickInterval / 1000)
+            end
+
+            killAuraTarget = nil
+        end
+    end
+end)
+
+------------------------------------------------------------------------
+-- УМНЫЕ ФРУКТЫ И СУНДУКИ (полёт с использованием FlyToPosition)
 ------------------------------------------------------------------------
 task.spawn(function()
     while task.wait(1) do
@@ -1537,7 +2403,7 @@ task.spawn(function()
                 local fruitId = fruitData.obj.Name .. "_" .. (fruitData.obj:GetAttribute("FruitID") or "")
                 if not collectedFruits[fruitId] then
                     collectedFruits[fruitId] = true
-                    SmoothFlyTween(fruitData.obj.Handle.Position)
+                    FlyToPosition(fruitData.obj.Handle.Position)
                     break
                 end
             end
@@ -1557,18 +2423,11 @@ task.spawn(function()
                         table.insert(chests, {model = chest, part = p, dist = dist})
                     end
                 end
-            else
-                for _, el in ipairs(Workspace:GetChildren()) do
-                    if el.Name:lower():find("chest") and el:IsA("Model") and el:FindFirstChildWhichIsA("BasePart") then
-                        local dist = (LocalPlayer.Character.HumanoidRootPart.Position - el:FindFirstChildWhichIsA("BasePart").Position).Magnitude
-                        table.insert(chests, {model = el, part = el:FindFirstChildWhichIsA("BasePart"), dist = dist})
-                    end
-                end
             end
             if #chests > 0 then
                 table.sort(chests, function(a, b) return a.dist < b.dist end)
                 local nearestChest = chests[1]
-                SmoothFlyTween(nearestChest.part.Position)
+                FlyToPosition(nearestChest.part.Position)
                 task.wait(0.2)
                 pcall(function()
                     local prompt = nearestChest.model:FindFirstChildOfClass("ProximityPrompt")
@@ -1580,7 +2439,7 @@ task.spawn(function()
 end)
 
 ------------------------------------------------------------------------
--- ПЛАВНЫЙ ПОЛЕТ И АТАКА (для одного врага)
+-- ПЛАВНЫЙ ПОЛЕТ И АТАКА (для одного врага) — используется основным циклом
 ------------------------------------------------------------------------
 RunService.RenderStepped:Connect(function(deltaTime)
     if not currentTarget then return end
@@ -1624,4 +2483,4 @@ end)
 
 -- Активация первой вкладки
 Tabs[1].Page.Visible = true
-TweenService:Create(Tabs[1].Btn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 140, 0), TextColor3 = Color3.fromRGB(0, 0, 0)}):Play()
+TweenService:Create(Tabs[1].Btn, TweenInfo.new(0.2), {BackgroundColor3 = _G.AccentColor, TextColor3 = Color3.fromRGB(0, 0, 0)}):Play()
